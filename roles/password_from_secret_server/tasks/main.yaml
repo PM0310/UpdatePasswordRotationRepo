@@ -1,0 +1,26 @@
+---
+- name: Ensure python-tss-sdk is installed
+  ansible.builtin.pip:
+    name: python-tss-sdk
+    state: present
+    
+- name: Retrieve the password from the Secret Server
+  vars:
+    secret: >-
+      {{
+        lookup(
+          'community.general.tss',
+          secret_id,
+          base_url=secret_server_base_url,
+          username=secret_server_username,
+          password=secret_server_password,
+          domain=secret_server_domain
+        )
+      }}
+  set_fact:
+    final_password: >-
+      {{
+        (secret['items']
+          | items2dict(key_name='slug',
+                       value_name='itemValue'))['password']
+      }}
