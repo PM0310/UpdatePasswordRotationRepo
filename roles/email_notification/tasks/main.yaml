@@ -1,0 +1,30 @@
+---
+- name: Aggregate results
+  set_fact:
+    password_reset_results: "{{ ansible_play_hosts | map('extract', hostvars, ['host_result']) | list }}"
+  run_once: true
+  delegate_to: localhost
+  
+- name: Send an email with the password reset results and password-protected zip file
+  community.general.mail:
+    host: "{{ smtp_server }}"
+    port: "{{ smtp_port }}"
+    from: "{{ email_sender }}"
+    to: "{{ email_recipients }}"
+    subject: "Password Reset Rotation - Alert"
+    body: |
+      Hi,
+
+      The password has been successfully reset for the following hosts and users:
+
+      {% for result in password_reset_results %}
+      Host: {{ result.host }} | User: {{ result.user }}
+      {% endfor %}
+
+      Use the secret server link below to get the password to extract it.
+
+      URL: https://centroid.secretservercloud.com/app/#/secrets/18613/general
+
+      Thanks & Regards,
+      Automation Team
+
