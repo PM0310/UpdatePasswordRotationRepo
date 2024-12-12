@@ -1,0 +1,18 @@
+---
+- name: Fetch a password from Secret Server, reset password on target hosts, and send email
+  hosts: all
+  gather_facts: false
+  
+  vars_files:
+    - vars/variables.yaml
+
+  roles:
+    - role: password_from_secret_server
+      delegate_to: localhost  
+      run_once: true
+
+    - role: password_reset
+
+    - role: email_notification
+      delegate_to: localhost  
+      run_once: true  
