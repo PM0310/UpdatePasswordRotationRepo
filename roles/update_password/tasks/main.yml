@@ -1,0 +1,46 @@
+
+- name: Set variables
+  set_fact:
+    api_url: "{{ secret_server_url }}/api/v1/secrets/{{ secret_id }}" 
+    site_id: 1               
+    field_id: 40                 
+    item_id: 253591 
+    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
+    comment: "made changes"
+    folderId: 1606
+
+
+- name: Request OAuth token
+  uri:
+    url: "{{ secret_server_url }}"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body: 
+      username: "{{ domain }}\\{{ username }}"
+      password: "{{ password }}"
+      grant_type: "password"
+    body_format: form-urlencoded
+  register: token_response
+
+- name: Update password
+  uri:
+    url: "{{ api_url }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ token_response.token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      id: "{{ secret_id }}"
+      name: "{{ secret_name }}"
+      siteId: "{{ site_id }}"
+      "folderId": "{{ folderId }}",
+      items:
+        - fieldId: "{{ field_id }}"
+          itemId: "{{ item_id }}"
+          itemValue: "{{ item_value }}"
+      active: true
+      comment: "{{ comment }}"
+    timeout: 30
+  register: update_response
