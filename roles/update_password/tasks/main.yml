@@ -35,7 +35,7 @@
       id: "{{ secret_id }}"
       name: "{{ secret_name }}"
       siteId: "{{ site_id }}"
-      folderId: "{{ folderId }}",
+      folderId: "{{ folderId }}"
       items:
         - fieldId: "{{ field_id }}"
           itemId: "{{ item_id }}"
