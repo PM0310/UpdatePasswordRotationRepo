@@ -13,6 +13,10 @@
 
     - role: password_reset
 
+    - role: update_password
+      delegate_to: localhost  
+      run_once: true
+
     - role: email_notification
       delegate_to: localhost  
-      run_once: true  
+      run_once: true 
