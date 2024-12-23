@@ -1,7 +1,7 @@
 
 - name: Set variables
   set_fact:
-    api_url: "{{ secret_server_url }}/api/v1/secrets/{{ secret_id }}" 
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_id }}" 
     site_id: 1               
     field_id: 40                 
     item_id: 253591 
@@ -12,7 +12,7 @@
 
 - name: Request OAuth token
   uri:
-    url: "{{ secret_server_url }}"
+    url: "{{ secret_server_base_url }}/oauth2/token"
     method: POST
     headers:
       Content-Type: "application/x-www-form-urlencoded"
