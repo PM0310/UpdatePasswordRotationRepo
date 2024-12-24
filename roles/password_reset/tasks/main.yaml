@@ -10,7 +10,8 @@
       user: "{{ username }}"
       
 - name: Collect host password reset results
-  local_action: set_fact
+#  local_action: set_fact
+  set_fact:
     password_reset_results: "{{ password_reset_results | default([]) + [ {'host': inventory_hostname, 'user': username} ] }}"
-  # delegate_to: localhost
-  run_once: false
+  delegate_to: localhost
+  #run_once: false
