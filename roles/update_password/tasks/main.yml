@@ -4,7 +4,7 @@
     api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_id }}" 
     site_id: 1               
     field_id: 40                 
-    item_id: 253591 
+    item_id: 250075 
 #    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
     comment: "made changes"
     folderId: 1606
