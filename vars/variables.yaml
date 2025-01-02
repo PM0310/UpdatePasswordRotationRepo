@@ -1,7 +1,7 @@
 smtp_server: "centroid-com.mail.protection.outlook.com"
 smtp_port: "25"
 email_recipients:
-  - madhuravani.peddi@centroid.com
+  - sreedhar.vajjilammagari@centroid.com
 email_sender: awx@cenautomaster.ad.centroid.com
 secret_id: "{{ secret_id }}"
 secret_server_base_url: "https://centroid.secretservercloud.com"
