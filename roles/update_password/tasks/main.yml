@@ -41,7 +41,7 @@
 
 - name: Debug filtered items
   debug:
-    msg: "{{ existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first }}"
+    msg: "{{ existing_secret.json.items }}"
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
