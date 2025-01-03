@@ -41,13 +41,13 @@
 
 - name: Debug filtered items
   debug:
-    msg: "{{ existing_secret.json.items }}"
+    msg: "{{ existing_secret.json['items'] }}"
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
-    siteId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).siteId }}"
-    fieldId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
-    itemId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+    siteId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).siteId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
+    fieldId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
+    itemId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
 
 
 
@@ -73,25 +73,25 @@
       - "Comment: {{ comment }}"
 
 
-- name: Update password
-  uri:
-    url: "{{ api_url }}"
-    method: PUT
-    headers:
-      Authorization: "Bearer {{ token_response.json.access_token }}"
-      Content-Type: "application/json"
-    body_format: json
-    body:
-      id: "{{ secret_id }}"
-      name: "{{ secret_name }}"
-      siteId: "{{ site_id }}"
-      folderId: "{{ folderId }}"
-      items:
-        - fieldId: "{{ field_id }}"
-          itemId: "{{ item_id }}"
-          itemValue: "{{ final_password }}"
-      active: true
-      comment: "{{ comment }}"
-    timeout: 30
-  register: update_response
-  # no_log: True
+# - name: Update password
+#   uri:
+#     url: "{{ api_url }}"
+#     method: PUT
+#     headers:
+#       Authorization: "Bearer {{ token_response.json.access_token }}"
+#       Content-Type: "application/json"
+#     body_format: json
+#     body:
+#       id: "{{ secret_id }}"
+#       name: "{{ secret_name }}"
+#       siteId: "{{ site_id }}"
+#       folderId: "{{ folderId }}"
+#       items:
+#         - fieldId: "{{ field_id }}"
+#           itemId: "{{ item_id }}"
+#           itemValue: "{{ final_password }}"
+#       active: true
+#       comment: "{{ comment }}"
+#     timeout: 30
+#   register: update_response
+#   # no_log: True
