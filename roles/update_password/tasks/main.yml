@@ -50,7 +50,7 @@
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
-    site_id: "{{ (existing_secret.json['siteId'] }}"
+    site_id: "{{ (existing_secret.json['siteId']) }}"
     field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
     item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
 
