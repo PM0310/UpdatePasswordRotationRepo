@@ -50,11 +50,9 @@
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
-    siteId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).siteId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
-    fieldId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
-    itemId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
-
-
+    # siteId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).siteId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
+    fieldId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+    itemId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
 
 
 # - name: Set values for site_id, field_id, and folder_id
