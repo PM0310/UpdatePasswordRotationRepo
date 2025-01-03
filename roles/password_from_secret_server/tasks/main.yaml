@@ -18,7 +18,7 @@
         )
       }}
   set_fact:
-    final_password: >-
+    final_password_from_ss: >-
       {{
         (secret['items']
           | items2dict(key_name='slug',
