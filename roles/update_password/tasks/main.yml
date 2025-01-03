@@ -2,12 +2,12 @@
 - name: Set variables
   set_fact:
     api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_id }}" 
-    site_id: 1               
-    field_id: 40                 
+    # site_id: 1               
+    # field_id: 40                 
     item_id: 253722 
 #    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
     comment: "made changes"
-    folderId: 1129
+    # folderId: 1129
     secret_name: "SREE"
 
 
@@ -24,6 +24,42 @@
     body_format: form-urlencoded
   register: token_response
   # no_log: True
+
+
+- name: Retrieve existing secret
+  uri:
+    url: "{{ api_url }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ token_response.json.access_token }}"
+    return_content: yes
+  register: existing_secret
+
+- name: Print the existing secret
+  debug:
+    var: existing_secret
+
+- name: Set values for site_id, field_id, and folder_id
+  set_fact:
+    site_id: "{{ existing_secret.json.siteId }}"
+    # field_id: "{{ existing_secret.json.items[0].fieldId }}"
+    field_id: "{{ existing_secret.json.items | selectattr('slug', 'equalto', 'password') | map(attribute='fieldId') | first }}"
+
+    folder_id: "{{ existing_secret.json.folderId }}"
+    # final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
+
+- name: Display the values after setting facts
+  debug:
+    msg:
+      - "API URL: {{ api_url }}"
+      - "Site ID: {{ site_id }}"
+      - "Field ID: {{ field_id }}"
+      - "Folder ID: {{ folderId }}"
+      - "Secret Name: {{ secret_name }}"
+      - "Final Password: {{ final_password }}"
+      - "Item ID: {{ item_id }}"
+      - "Comment: {{ comment }}"
+
 
 - name: Update password
   uri:
