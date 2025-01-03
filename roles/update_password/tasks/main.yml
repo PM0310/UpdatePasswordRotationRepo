@@ -39,14 +39,24 @@
   debug:
     var: existing_secret
 
-- name: Set values for site_id, field_id, and folder_id
-  set_fact:
-    site_id: "{{ existing_secret.json.siteId }}"
-    # field_id: "{{ existing_secret.json.items[0].fieldId }}"
-    field_id: "{{ existing_secret.json.items | selectattr('slug', 'equalto', 'password') | map(attribute='fieldId') | first }}"
 
-    folder_id: "{{ existing_secret.json.folderId }}"
-    # final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
+
+- name: Set siteId, fieldId, itemId for password
+  set_fact:
+    siteId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).siteId }}"
+    fieldId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+    itemId: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+
+
+
+# - name: Set values for site_id, field_id, and folder_id
+#   set_fact:
+#     site_id: "{{ existing_secret.json.siteId }}"
+#     # field_id: "{{ existing_secret.json.items[0].fieldId }}"
+#     field_id: "{{ existing_secret.json.items | selectattr('slug', 'equalto', 'password') | map(attribute='fieldId') | first }}"
+
+#     folder_id: "{{ existing_secret.json.folderId }}"
+#     # final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
 
 - name: Display the values after setting facts
   debug:
