@@ -87,7 +87,7 @@
       Content-Type: "application/json"
     body_format: json
     body:
-      # id: "{{ secret_id }}"
+      id: "{{ secret_id }}"
       name: "{{ secret_name }}"
       siteId: "{{ site_id }}"
       folderId: "{{ folder_id }}"
