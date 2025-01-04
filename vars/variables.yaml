@@ -4,6 +4,7 @@ email_recipients:
   - sreedhar.vajjilammagari@centroid.com
 email_sender: awx@cenautomaster.ad.centroid.com
 secret_id: "{{ secret_id }}"
+secret_name: "{{ secret_name }}"
 secret_server_base_url: "https://centroid.secretservercloud.com"
 secret_server_username: "{{ secret_server_user }}"
 secret_server_password: "{{ secret_server_pass }}"
