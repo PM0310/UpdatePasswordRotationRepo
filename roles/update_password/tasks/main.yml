@@ -22,6 +22,7 @@
       password: "{{ secret_server_password }}"
       grant_type: "password"
     body_format: form-urlencoded
+    timeout: 60
   register: token_response
   # no_log: True
 
