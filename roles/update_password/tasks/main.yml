@@ -24,6 +24,7 @@
     body_format: form-urlencoded
     # timeout: 60
   register: token_response
+  delegate_to: localhost
   no_log: false
 
 
@@ -35,6 +36,7 @@
       Authorization: "Bearer {{ token_response.json.access_token }}"
     return_content: yes
   register: existing_secret
+  delegate_to: localhost
 
 
 - name: Debug password item
