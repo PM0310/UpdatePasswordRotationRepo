@@ -8,35 +8,35 @@
 
 
 
-  # tasks:
-  #   - name: Process each user
-  #     include_tasks: tasks/user_password_rotate.yaml
-  #     with_items: "{{ users }}"
-  #     loop_control:
-  #       loop_var: user_details
+  tasks:
+    - name: Process each user
+      include_tasks: tasks/user_password_rotate.yaml
+      with_items: "{{ users }}"
+      loop_control:
+        loop_var: user_details
 
 
 
 
 
-  pre_tasks:
-    - name: Generate a random password
-      set_fact:
-        final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
-      # no_log: true
+  # pre_tasks:
+  #   - name: Generate a random password
+  #     set_fact:
+  #       final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
+  #     # no_log: true
   
-  roles:
-    - role: password_from_secret_server
-      delegate_to: localhost  
-      run_once: true
+  # roles:
+  #   - role: password_from_secret_server
+  #     delegate_to: localhost  
+  #     run_once: true
 
-    - role: password_reset
-      # no_log: true
+  #   - role: password_reset
+  #     # no_log: true
 
-    - role: update_password
-      delegate_to: localhost  
-      run_once: true
+  #   - role: update_password
+  #     delegate_to: localhost  
+  #     run_once: true
 
-    - role: email_notification
-      delegate_to: localhost  
-      run_once: true
+  #   - role: email_notification
+  #     delegate_to: localhost  
+  #     run_once: true
