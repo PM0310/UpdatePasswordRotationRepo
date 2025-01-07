@@ -40,10 +40,9 @@
 
 - name: Find the first ID for the specified secret_name
   set_fact:
-    # first_secret_id: "{{ matching_secrets.json.records | json_query(query) | first }}"
+
     first_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
-  # vars:
-  #   query: "[?name=='{{ secret_name }}'].id"
+
 
 - name: Show the extracted first ID
   debug:
@@ -82,7 +81,7 @@
 - name: Display the values after setting facts
   debug:
     msg:
-      - "API URL: {{ api_url }}"
+      - "API URL: {{ api_url2 }}"
       - "Site ID: {{ site_id }}"
       - "Field ID: {{ field_id }}"
       - "Folder ID: {{ folder_id }}"
@@ -95,7 +94,7 @@
 
 - name: Update password
   uri:
-    url: "{{ api_url }}"
+    url: "{{ api_url2 }}"
     method: PUT
     headers:
       Authorization: "Bearer {{ token_response.json.access_token }}"
