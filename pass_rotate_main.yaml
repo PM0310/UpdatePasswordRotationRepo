@@ -29,11 +29,11 @@
             loop_control:
               loop_var: user_details
 
-        vars:
-          allowed_users:
-            - root
-            - oracle
-            - applmgr
+        # vars:
+        #   allowed_users:
+        #     - root
+        #     - oracle
+        #     - applmgr
 
 
 
