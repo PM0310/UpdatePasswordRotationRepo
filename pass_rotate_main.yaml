@@ -9,6 +9,29 @@
   tasks:
       - name: Restrict password rotation to root and service accounts
         block:
+
+
+
+          - name: Populate usernames dynamically based on secret_name
+            set_fact:
+              users_with_username: >-
+                {{
+                  users | map(
+                    'combine', {'username': item.secret_name.split('_')[-1] | lower}
+                  ) | list
+                }}
+            loop: "{{ users }}"
+            loop_control:
+              loop_var: item
+            run_once: true
+
+          - name: Debug updated user list
+            debug:
+              var: users_with_username
+
+
+
+        
           - name: List all users received from variables
             debug:
               msg: "Received user: {{ item.username }}"
