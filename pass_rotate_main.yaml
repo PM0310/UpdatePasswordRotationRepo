@@ -3,16 +3,11 @@
   gather_facts: false
   
   vars_files:
-    - vars/variables.yaml
-  
+    - vars/variables.yaml  
 
   tasks:
       - name: Restrict password rotation to root and service accounts
         block:
-
-
-
-
           - name: Dynamically add username to users based on secret_name
             set_fact:
               users_with_username: >-
@@ -39,23 +34,6 @@
           - name: Debug filtered users
             debug:
               var: filtered_users
-
-
-
-        
-          # - name: List all users received from variables
-          #   debug:
-          #     msg: "Received user: {{ item.username }}"
-          #   loop: "{{ users }}"
-
-          # - name: Filter allowed users
-          #   set_fact:
-          #     filtered_users: "{{ users | selectattr('username', 'in', allowed_users) | list }}"
-
-          # - name: Debug filtered users
-          #   debug:
-          #     msg: "Filtered user: {{ item.username }}"
-          #   loop: "{{ filtered_users }}"
             
           - name: Process filtered users for password rotation
             include_tasks: tasks/user_password_rotate.yaml
@@ -63,32 +41,4 @@
             loop_control:
               loop_var: user_details
 
-        # vars:
-        #   allowed_users:
-        #     - root
-        #     - oracle
-        #     - applmgr
 
-
-
-  # pre_tasks:
-  #   - name: Generate a random password
-  #     set_fact:
-  #       final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
-  #     # no_log: true
-  
-  # roles:
-  #   - role: password_from_secret_server
-  #     delegate_to: localhost  
-  #     run_once: true
-
-  #   - role: password_reset
-  #     # no_log: true
-
-    # - role: update_password
-    #   delegate_to: localhost  
-    #   run_once: true
-
-  #   - role: email_notification
-  #     delegate_to: localhost  
-  #     run_once: true
