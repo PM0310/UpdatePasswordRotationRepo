@@ -12,12 +12,16 @@
 
 
 
-          - name: Populate usernames dynamically based on secret_name
+
+          - name: Dynamically add username to users based on secret_name
             set_fact:
               users_with_username: >-
                 {{
                   users | map(
-                    'combine', {'username': item.secret_name.split('_')[-1] | lower}
+                    'combine',
+                    {
+                      'username': item.secret_name.split('_')[-1] | lower
+                    }
                   ) | list
                 }}
             loop: "{{ users }}"
@@ -25,26 +29,33 @@
               loop_var: item
             run_once: true
 
-          - name: Debug updated user list
+          - name: Filter users based on allowed_users
+            set_fact:
+              filtered_users: >-
+                {{
+                  users_with_username | selectattr('username', 'in', allowed_users) | list
+                }}
+
+          - name: Debug filtered users
             debug:
-              var: users_with_username
+              var: filtered_users
 
 
 
         
-          - name: List all users received from variables
-            debug:
-              msg: "Received user: {{ item.username }}"
-            loop: "{{ users }}"
+          # - name: List all users received from variables
+          #   debug:
+          #     msg: "Received user: {{ item.username }}"
+          #   loop: "{{ users }}"
 
-          - name: Filter allowed users
-            set_fact:
-              filtered_users: "{{ users | selectattr('username', 'in', allowed_users) | list }}"
+          # - name: Filter allowed users
+          #   set_fact:
+          #     filtered_users: "{{ users | selectattr('username', 'in', allowed_users) | list }}"
 
-          - name: Debug filtered users
-            debug:
-              msg: "Filtered user: {{ item.username }}"
-            loop: "{{ filtered_users }}"
+          # - name: Debug filtered users
+          #   debug:
+          #     msg: "Filtered user: {{ item.username }}"
+          #   loop: "{{ filtered_users }}"
             
           - name: Process filtered users for password rotation
             include_tasks: tasks/user_password_rotate.yaml
