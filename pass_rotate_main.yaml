@@ -10,7 +10,7 @@
         block:
           - name: Dynamically add username to users based on secret_name
             set_fact:
-              users_with_defaults: >-
+              users_with_username: >-
                 {{
                   users | map(
                     'combine',
