@@ -19,6 +19,27 @@
 #   delegate_to: localhost
 #   no_log: false
 
+
+- name: Trigger Duo push notification
+  uri:
+    url: "https://api-duo.example.com/push"
+    method: POST
+    body:
+      username: "sreedhar.vajjilammagari@centroid.com"
+      # username: "{{ username }}"
+      factor: "push"
+    body_format: json
+  register: duo_response
+
+- name: Approve Duo push notification
+  uri:
+    url: "https://api-duo.example.com/approve"
+    method: POST
+    body:
+      txid: "{{ duo_response.json.txid }}"
+    body_format: json
+  register: duo_approval
+
 - name: Request OAuth token
   uri:
     url: "{{ secret_server_base_url }}/oauth2/token"
@@ -28,7 +49,8 @@
     body: 
       username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
       password: "{{ secret_server_password }}"
-      mfa_token: "{{ mfa_token }}"
+      mfa_token: "{{ duo_approval.json.response }}"
+      # mfa_token: "{{ mfa_token }}"
     body_format: json
   register: token_response
   delegate_to: localhost
