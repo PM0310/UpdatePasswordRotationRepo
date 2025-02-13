@@ -2,22 +2,22 @@
 - name: Set variables
   set_fact:
     api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
+    tkn: "AgI_z9UAqujnj0WKVLjRzkIRBJ0Gke38eubaH5l8n5OikeUNcOMOEidcPWc5-tRYXDqQdiV1eOnnD67bPH2_bIN0XvRny-i3U6tnLrJcxFHJfmvoONfk0jOcvSf738g0DMBochAn5DQcAAMvzh4-DkFupNrm-Jg0jgXkziL2cD2VYq-HohO7prl8nGz4JKUaQsJRYvOHQyPYLZzvkaJGSjb5OYlMxdSRMEdOKoLDrw17bEfcIbiI6hR-FvP5PeyKJPo4wZhPBMl4BgyJOyxCi8swir_haSuJiUDJ63LkG8ZH9hfWv8SiTE0NcZrCI78P0iWQNHLClkCxYeJNLDLHiQ98_674Tr-FV31CJhqeitk5hqNqQKVdaCpzTMYKjPu330vBOO4Sm0yunvtwRjXN3hwEkSLxOw1_yOW3GUKa3lEpxtP7ZW50CB77a2nrjQkXUhQeGk1_uIpjfrCTUNHdrw1skbPjwZzjVfqB98aUjPYZxBlIndgdIj6OKfDwDxjN3-aJ0m8uvF47SbWEWhxnhTYYPZtIPAo8PGRc8Vam6Tac191olAzT9tkJtr1PBLI3Cy0O3inssJOMRHIvuNPLaKFiMBWgJBN_kHX5vyedSf2fiXxUbtnzAjHmy8piQzhCqvxBtbIBKED5mxE5a1tI-s6UdfktwR_rcwamRLVeixq9s_UGnLEPttLk1QXkQmeW6IsIXoBnbkbVqx5ZH85RD4mRMerhWZDaIypC5MBbKXmrMQ"
 
-
-- name: Request OAuth token
-  uri:
-    url: "{{ secret_server_base_url }}/oauth2/token"
-    method: POST
-    headers:
-      Content-Type: "application/x-www-form-urlencoded"
-    body: 
-      username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
-      password: "{{ secret_server_password }}"
-      grant_type: "password"
-    body_format: form-urlencoded
-  register: token_response
-  delegate_to: localhost
-  no_log: false
+# - name: Request OAuth token
+#   uri:
+#     url: "{{ secret_server_base_url }}/oauth2/token"
+#     method: POST
+#     headers:
+#       Content-Type: "application/x-www-form-urlencoded"
+#     body: 
+#       username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
+#       password: "{{ secret_server_password }}"
+#       grant_type: "password"
+#     body_format: form-urlencoded
+#   register: token_response
+#   delegate_to: localhost
+#   no_log: false
 
 
 - name: Retrieve matching secrets
@@ -25,7 +25,8 @@
     url: "{{ api_url }}"
     method: GET
     headers:
-      Authorization: "Bearer {{ token_response.json.access_token }}"
+      Authorization: "Bearer {{ tkn }}"
+      # Authorization: "Bearer {{ token_response.json.access_token }}"
     return_content: yes
   register: secrets_found
   delegate_to: localhost
@@ -43,7 +44,8 @@
     url: "{{ api_url2 }}"
     method: GET
     headers:
-      Authorization: "Bearer {{ token_response.json.access_token }}"
+      Authorization: "Bearer {{ tkn }}"
+      # Authorization: "Bearer {{ token_response.json.access_token }}"
     return_content: yes
   register: existing_secret
   delegate_to: localhost
@@ -64,7 +66,8 @@
     url: "{{ api_url2 }}"
     method: PUT
     headers:
-      Authorization: "Bearer {{ token_response.json.access_token }}"
+      Authorization: "Bearer {{ tkn }}"
+      # Authorization: "Bearer {{ token_response.json.access_token }}"
       Content-Type: "application/json"
     body_format: json
     body:
