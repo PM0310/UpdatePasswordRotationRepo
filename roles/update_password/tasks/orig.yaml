@@ -82,3 +82,42 @@
   register: update_response
   delegate_to: localhost
   no_log: true
+
+
+
+  
+# - name: Trigger Duo push notification
+#   uri:
+#     url: "https://api-duo.example.com/push"   # need duo api url
+#     method: POST
+#     body:
+#       username: {{ secret_server_username }}
+#       # username: "{{ username }}"
+#       factor: "push"
+#     body_format: json
+#   register: duo_response
+
+# - name: Approve Duo push notification
+#   uri:
+#     url: "https://api-duo.example.com/approve"   # need duo api url
+#     method: POST
+#     body:
+#       txid: "{{ duo_response.json.txid }}"
+#     body_format: json
+#   register: duo_approval
+
+# - name: Request OAuth token
+#   uri:
+#     url: "{{ secret_server_base_url }}/oauth2/token"
+#     method: POST
+#     headers:
+#       Content-Type: "application/x-www-form-urlencoded"
+#     body: 
+#       username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
+#       password: "{{ secret_server_password }}"
+#       mfa_token: "{{ duo_approval.json.response }}"
+#       # mfa_token: "{{ mfa_token }}"
+#     body_format: json
+#   register: token_response
+#   delegate_to: localhost
+#   no_log: false

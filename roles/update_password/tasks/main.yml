@@ -2,7 +2,7 @@
 - name: Set variables
   set_fact:
     api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
-    tkn: "AgKLe7JMyx08TO7ohC4KHUBkIe_mPEvSqhFUYpD0DXRlcLwTsRaWTE0s6Kqwceh2tHCCAS4dNuddYR_NXY5dpaxkTZcNfiCcCWScbsJJi6pDN86HA1cIc0FroHVHDex-qzFfRxTGEVnwNvV7-ZgLBYHm-sSGd1F_QS9s4Wjwv2IwzeBN0aJ4rDxmF_uJJbMA3vp9M1UEm0yzR-Am2F_VQ7rXXq_DmMmPO-scZ56g3PCv0zUD9QbJZMw9pm4mR4tjbKo62wBwGEjAhVaLzX199IumBDPzaQf6mG4s5kx3nDLiGfV1IL3WhXXsIKKfKAPG402mtpqy6TWwcfbQug6XK6-D3mBf0Dq54Wx345yqRxwP4V8AsE-HEycNbgZUvQ1gprFLsfftL1nxlFslw35sY-L9wJKGT7NuyrPASdnpRezX60U9dbFNxdXQ20u0wSdzCkKnqC6jqGyc1w9MMK30Xv1jHbbbuIVkrhAfqm3hm4JObpNToPqhGM21Qe4BjWrh12FQFpN26wqtMjn77YzmcMHyp3ENN8XCRVD5afiG8dSkn6ZKNYeGEF66hMFzBpXhhU5lRrJyK_we0dgf8_927HoYkg3B5EzwCuEdCzQhEwo92xKiI2z2yH7Zc-DznGfsfPiO_5_izKBToksCDodWDwJqhSKuGThYzQ74qavOyqZrJSGSzNOTb-Jpt3oZE6vucXpQrf0M9xv1m_73aeZq1KsbhMijjDQkeSPZsW0OiWYSlA"
+    tkn: "{{ tkn }}"
 
 # - name: Request OAuth token
 #   uri:
@@ -18,44 +18,6 @@
 #   register: token_response
 #   delegate_to: localhost
 #   no_log: false
-
-
-# - name: Trigger Duo push notification
-#   uri:
-#     url: "https://api-duo.example.com/push"   # need duo api url
-#     method: POST
-#     body:
-#       username: {{ secret_server_username }}
-#       # username: "{{ username }}"
-#       factor: "push"
-#     body_format: json
-#   register: duo_response
-
-# - name: Approve Duo push notification
-#   uri:
-#     url: "https://api-duo.example.com/approve"   # need duo api url
-#     method: POST
-#     body:
-#       txid: "{{ duo_response.json.txid }}"
-#     body_format: json
-#   register: duo_approval
-
-# - name: Request OAuth token
-#   uri:
-#     url: "{{ secret_server_base_url }}/oauth2/token"
-#     method: POST
-#     headers:
-#       Content-Type: "application/x-www-form-urlencoded"
-#     body: 
-#       username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
-#       password: "{{ secret_server_password }}"
-#       mfa_token: "{{ duo_approval.json.response }}"
-#       # mfa_token: "{{ mfa_token }}"
-#     body_format: json
-#   register: token_response
-#   delegate_to: localhost
-#   no_log: false
-
 
 - name: Retrieve matching secrets
   uri:
