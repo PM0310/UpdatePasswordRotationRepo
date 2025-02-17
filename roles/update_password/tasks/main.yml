@@ -4,20 +4,6 @@
     api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
     tkn: "{{ tkn }}"
 
-# - name: Request OAuth token
-#   uri:
-#     url: "{{ secret_server_base_url }}/oauth2/token"
-#     method: POST
-#     headers:
-#       Content-Type: "application/x-www-form-urlencoded"
-#     body: 
-#       username: "{{ secret_server_domain }}\\{{ secret_server_username }}"
-#       password: "{{ secret_server_password }}"
-#       grant_type: "password"
-#     body_format: form-urlencoded
-#   register: token_response
-#   delegate_to: localhost
-#   no_log: false
 
 - name: Retrieve matching secrets
   uri:
@@ -25,7 +11,6 @@
     method: GET
     headers:
       Authorization: "Bearer {{ tkn }}"
-      # Authorization: "Bearer {{ token_response.json.access_token }}"
     return_content: yes
   register: secrets_found
   delegate_to: localhost
@@ -44,7 +29,6 @@
     method: GET
     headers:
       Authorization: "Bearer {{ tkn }}"
-      # Authorization: "Bearer {{ token_response.json.access_token }}"
     return_content: yes
   register: existing_secret
   delegate_to: localhost
@@ -66,7 +50,6 @@
     method: PUT
     headers:
       Authorization: "Bearer {{ tkn }}"
-      # Authorization: "Bearer {{ token_response.json.access_token }}"
       Content-Type: "application/json"
     body_format: json
     body:
