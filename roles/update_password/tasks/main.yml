@@ -22,6 +22,12 @@
   register: secrets_found
   delegate_to: localhost
 
+
+- name: Debug API response
+  debug:
+    var: secrets_found.json
+
+
 - name: Find the ID for the specified secret_name
   set_fact:
     found_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
