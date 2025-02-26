@@ -24,7 +24,7 @@
             loop: "{{ users }}"
             loop_control:
               loop_var: item
-            run_once: true
+            # run_once: true
 
           - name: Filter users based on allowed_users
             set_fact:
