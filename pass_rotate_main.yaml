@@ -6,7 +6,7 @@
   tasks:
     - name: Filter only the groups that contain hosts in this play
       set_fact:
-        limited_groups: "{{ groups.keys() | select('search', '^(?!all$|ungrouped$)') | select('in', ansible_play_hosts | map('extract', hostvars, 'group_names') | list) | list }}"
+        limited_groups: "{{ groups.keys() | select('search', '^(?!all$|ungrouped$)') | select('in', groups.keys() | select('in', ansible_play_hosts_all | map('extract', hostvars, 'group_names') | list)) | list }}"
 
     - name: Debug - Show only groups in the limit
       debug:
@@ -32,6 +32,7 @@
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
+
 
     # - name: Rotate password on each host
     #   include_tasks: user_password_rotate.yaml
