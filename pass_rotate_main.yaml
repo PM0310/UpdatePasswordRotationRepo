@@ -1,12 +1,12 @@
 - name: Rotate passwords for each inventory group
   hosts: all
   gather_facts: no
-  run_once: true  # Run once and store variables globally
+  run_once: true
 
   tasks:
-    - name: Filter only the groups with hosts in the current play (limited groups)
+    - name: Filter only the groups that contain hosts in this play
       set_fact:
-        limited_groups: "{{ groups.keys() | select('search', '^(?!all$|ungrouped$)') | list }}"
+        limited_groups: "{{ groups.keys() | select('search', '^(?!all$|ungrouped$)') | select('in', ansible_play_hosts | map('extract', hostvars, 'group_names') | list) | list }}"
 
     - name: Debug - Show only groups in the limit
       debug:
@@ -19,7 +19,7 @@
 
     - name: Generate passwords for each group and store in a dictionary
       set_fact:
-        group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }) }}"
+        group_passwords: "{{ hostvars['localhost'].get('group_passwords', {}) | combine({ item: lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }) }}"
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
@@ -32,3 +32,8 @@
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
+
+    # - name: Rotate password on each host
+    #   include_tasks: user_password_rotate.yaml
+    #   vars:
+    #     final_password: "{{ final_password }}"
