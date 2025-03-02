@@ -85,4 +85,4 @@
     timeout: 30
   register: update_response
   delegate_to: localhost
-  no_log: true
+  # no_log: true
