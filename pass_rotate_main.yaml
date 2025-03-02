@@ -47,7 +47,8 @@
 
     - name: Debug - Show stored passwords dictionary
       debug:
-        var: group_pwds
+        var: hostvars['global_passwords'].group_pwds
+      run_once: true
 
 
 
