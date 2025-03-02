@@ -9,15 +9,9 @@
       debug:
         msg: "Ansible limit: {{ ansible_limit | default('Not Defined') }}"
 
-
-    # - name: Filter only the groups that contain hosts in this play
-    #   set_fact:
-    #     limited_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | select('match', '^.*') | select('in', ansible_limit.split(',')) | list }}"
-
-    - name: Normalize ansible_limit and extract valid groups
+    - name: Extract valid groups from ansible_limit
       set_fact:
         limited_groups: "{{ ansible_limit.split(',') | map('trim') | select('in', groups.keys()) | list }}"
-
 
     - name: Debug - Show only groups in the limit
       debug:
@@ -28,14 +22,10 @@
         msg: "Hosts in group {{ item }}: {{ groups[item] }}"
       loop: "{{ limited_groups }}"
 
-    - name: Initialize group_passwords as an empty dictionary
-      set_fact:
-        group_passwords: {}
-
     - name: Generate passwords for each group and store in a dictionary
       set_fact:
         group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
-      with_items: "{{ limited_groups }}"
+      loop: "{{ limited_groups }}"
 
     - name: Store group passwords globally
       add_host:
@@ -43,21 +33,15 @@
         group_pwds: "{{ group_passwords }}"
       run_once: true
 
-
-
     - name: Debug - Show stored passwords dictionary
       debug:
         var: hostvars['global_passwords'].group_pwds
       run_once: true
 
-
-
     - name: Debug - Show generated passwords per group
       debug:
         msg: "{{ hostvars['global_passwords']['group_pwds'] }}"
       run_once: true
-
-
 
     # - name: Rotate password on each host
     #   include_tasks: user_password_rotate.yaml
