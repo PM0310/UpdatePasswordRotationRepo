@@ -43,7 +43,7 @@
       run_once: true
 
     - name: Rotate password on each host
-      include_tasks: user_password_rotate.yaml
+      include_tasks: tasks/user_password_rotate.yaml
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: group_name
