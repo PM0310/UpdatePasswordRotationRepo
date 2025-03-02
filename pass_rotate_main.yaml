@@ -4,6 +4,12 @@
   run_once: true
 
   tasks:
+
+    - name: Debug - Show ansible_limit
+      debug:
+        msg: "Ansible limit: {{ ansible_limit | default('Not Defined') }}"
+
+
     - name: Filter only the groups that contain hosts in this play
       set_fact:
         limited_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | select('match', '^.*') | select('in', ansible_limit.split(',')) | list }}"
