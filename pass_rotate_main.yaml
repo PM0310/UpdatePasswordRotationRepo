@@ -54,10 +54,8 @@
 
     - name: Debug - Show generated passwords per group
       debug:
-        msg: "Generated password for group {{ item }}: {{ hostvars['localhost']['group_pwds'][item] }}"
-      loop: "{{ limited_groups }}"
-      loop_control:
-        loop_var: item
+        msg: "{{ hostvars['global_passwords']['group_pwds'] }}"
+      run_once: true
 
 
 
