@@ -1,17 +1,12 @@
-
 - name: Debug secret_name before API call
   debug:
-    msg: "Processing secret_name: {{ secret_name__ }} for host {{ inventory_hostname }}"
+    msg: "Processing secret_name: {{ user_details.secret_name }} for host {{ inventory_hostname }}"
   run_once: false
-
-
 
 - name: Set variables
   set_fact:
-    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name1 }}"
-    tkn: "{{ tkn }}"
-
-
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
+    
 - name: Retrieve matching secrets
   uri:
     url: "{{ api_url }}"
@@ -22,25 +17,28 @@
   register: secrets_found
   delegate_to: localhost
 
-
 - name: Debug API response
   debug:
     var: secrets_found.json
 
-
 - name: Find the ID for the specified secret_name
   set_fact:
-    found_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name__) | map(attribute='id') | list | first }}"
-
+    found_secret_id: >-
+      {{
+        secrets_found.json.records | default([]) 
+        | selectattr('name', 'equalto', user_details.secret_name) 
+        | map(attribute='id') 
+        | list 
+        | first | default('')
+      }}
 
 - name: Debug found_secret_id
   debug:
-    msg: "Secret ID found: {{ found_secret_id }} for secret_name: {{ secret_name__ }}"
-
+    msg: "Secret ID found: {{ found_secret_id }} for secret_name: {{ user_details.secret_name }}"
 
 - name: Set api_url to get the secret details from the secret_id
   set_fact:
-    api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}" 
+    api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}"
 
 - name: Retrieve existing secret
   uri:
@@ -54,19 +52,17 @@
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
-    site_id: "{{ (existing_secret.json['siteId']) }}"
-    folder_id: "{{ (existing_secret.json['folderId']) }}"
-    field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
-    item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
-    secret_name_exst: "{{ existing_secret.json['name'] }}"
-    secret_id: "{{ existing_secret.json['id'] }}"
-    comment: "Updating password for secret :   {{ user_details.secret_name }}"
-
+    site_id: "{{ existing_secret.json['siteId'] | default('') }}"
+    folder_id: "{{ existing_secret.json['folderId'] | default('') }}"
+    field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first | default({})).fieldId | default('') }}"
+    item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first | default({})).itemId | default('') }}"
+    secret_name_exst: "{{ existing_secret.json['name'] | default('') }}"
+    secret_id: "{{ existing_secret.json['id'] | default('') }}"
+    comment: "Updating password for secret: {{ user_details.secret_name | default('UNKNOWN') }}"
 
 - name: Debug - Show secret details before update
   debug:
     msg: "Updating Secret Name: {{ secret_name_exst }}, Secret ID: {{ secret_id }} for Group: {{ group_name }}"
-
 
 - name: Update password
   uri:
