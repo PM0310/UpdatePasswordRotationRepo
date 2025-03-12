@@ -6,7 +6,7 @@
   set_fact:
     limited_groups: "{{ ansible_limit.split(',') | map('trim') | select('in', groups.keys()) | list }}"
 
-- name: Debug - Show only groups in the limit
+- name: Debug - Show selected inventory groups
   debug:
     msg: "Processing inventory groups: {{ limited_groups }}"
 
@@ -23,14 +23,16 @@
   set_fact:
     group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
   with_items: "{{ limited_groups }}"
+  no_log: true  # Hide passwords in logs
 
 - name: Store group passwords globally
   add_host:
     name: "global_passwords"
     group_pwds: "{{ group_passwords }}"
   run_once: true
+  no_log: true  # Hide passwords in logs
 
-- name: Debug - Show stored passwords dictionary
-  debug:
-    var: hostvars['global_passwords'].group_pwds
-  run_once: true
+# - name: Debug - Show stored passwords dictionary
+#   debug:
+#     var: hostvars['global_passwords'].group_pwds
+#   run_once: true

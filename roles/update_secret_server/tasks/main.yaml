@@ -2,23 +2,13 @@
   set_fact:
     group_name: "{{ group_name | default(hostvars[inventory_hostname].global_group_name, true) }}"
 
-
-
-
 - name: Debug - Check if group_name is received in update_secret_server
   debug:
     msg: "Received group_name: {{ group_name | default('NOT RECEIVED') }}"
 
-
-# - name: Set group_name variable correctly
-#   set_fact:
-#     group_name1: "{{ group_name }}"
-
 - name: Store group_name globally before calling update_secret_server
   set_fact:
     global_group_name: "{{ group_name }}"
-
-
 
 - name: Store secret_name globally before updating Secret Server
   set_fact:
@@ -27,7 +17,6 @@
 - name: Debug - Show values before updating Secret Server
   debug:
     msg: "Updating Secret Server - Group: {{ global_group_name }}, Secret: {{ global_secret_name }}"
-
 
 - name: Update password in Secret Server for each group
   include_role:

@@ -1,29 +1,6 @@
-# - name: Debug - Show available variables
-#   debug:
-#     var: vars
-
-
-# - name: Debug - Verify secret_name for each host
-#   debug:
-#     msg: "Host {{ inventory_hostname }} (Group: {{ group_names[0] }}) will use secret: {{ secret_name }}"
-
 - name: Debug - Verify received secret_name and group_name
   debug:
     msg: "Processing host: {{ inventory_hostname }}, Group: {{ group_name }}, Secret Name: {{ secret_name }}"
-
-
-
-# - name: Debug all variables before API call
-#   debug:
-#     msg:
-#       - "Processing secret_name: {{ secret_name }}"
-#       - "Processing for host: {{ inventory_hostname }}"
-#       - "Group: {{ group_names }}"
-#       - "User details: {{ user_details }}"
-#       - "Final password: {{ final_password }}"
-#   run_once: false
-
-
 
 - name: Set variables
   set_fact:
