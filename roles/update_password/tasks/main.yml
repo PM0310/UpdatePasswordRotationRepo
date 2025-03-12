@@ -82,6 +82,11 @@
     msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} {% if group_name is defined %} for Group: {{ group_name }} {% else %} (Group Name Not Defined) {% endif %}"
 
 
+- name: Debug - Verify secret_name before updating Secret Server
+  debug:
+    msg: "Using Secret Name: {{ secret_name }} for Group: {{ group_name }}"
+
+
 - name: Update password
   uri:
     url: "{{ api_url2 }}"

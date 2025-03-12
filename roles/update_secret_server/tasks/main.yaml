@@ -1,12 +1,10 @@
 - name: Set group_name variable correctly
   set_fact:
-    group_name1: "{{ group_names[0] }}"
+    group_name1: "{{ group_name }}"
 
-- name: Debug - Show resolved group_name
+- name: Debug - Show resolved group_name correctly
   debug:
-    var: group_name1
-
-
+    msg: "Resolved group name: {{ group_name1 }} (Original: {{ group_name }})"
 
 - name: Update password in Secret Server for each group
   include_role:
@@ -17,10 +15,8 @@
     secret_id: "{{ found_secret_id }}"
     group_name: "{{ group_name1 }}"
 
-
 - name: Send Email Notification
   include_role:
     name: send_email_notification
   vars:
     group_name: "{{ group_name1 }}"
-
