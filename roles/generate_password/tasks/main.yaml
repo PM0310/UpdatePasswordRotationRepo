@@ -32,7 +32,4 @@
   run_once: true
   no_log: true  # Hide passwords in logs
 
-# - name: Debug - Show stored passwords dictionary
-#   debug:
-#     var: hostvars['global_passwords'].group_pwds
-#   run_once: true
+
