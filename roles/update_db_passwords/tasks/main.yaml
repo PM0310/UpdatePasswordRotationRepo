@@ -1,0 +1,9 @@
+- name: Rotate password for database users
+  community.general.sql:
+    login_host: "{{ db_host }}"
+    login_user: "{{ db_admin_user }}"
+    login_password: "{{ db_admin_password }}"
+    login_db: "{{ db_service }}"
+    query: "ALTER USER {{ item }} IDENTIFIED BY '{{ db_passwords[item] }}';"
+  loop: "{{ db_users }}"
+  no_log: true

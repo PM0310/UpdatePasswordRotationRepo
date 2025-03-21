@@ -89,7 +89,6 @@
           itemValue: "{{ final_password }}"
       active: true
       comment: "{{ comment }}"
-    timeout: 30
   register: update_response
   delegate_to: localhost
   no_log: true
