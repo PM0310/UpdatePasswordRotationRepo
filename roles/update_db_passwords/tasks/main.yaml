@@ -1,27 +1,16 @@
 ---
-- name: Check
-  shell: |
-    whoami
-    ls *.env
-    source CEBSTRGT_cenartrgtdb01.env
-  args:
-    executable: /bin/bash
 - name: Check account status of the target Oracle user
   shell: |
     source CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF | grep -o 'OPEN'
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
-    SELECT account_status FROM dba_users WHERE username = 'SYS';
+    SELECT account_status FROM dba_users WHERE username = '{{ target_user | upper} }}';
     EXIT;
     EOF
   args:
     executable: /bin/bash
   register: account_status
   changed_when: false
-
-#UPPER('{{ target_user }}');
-#{{ target_user }}
-#{{ new_password }}
 
 - name: Debug Show account status output
   debug:
@@ -31,7 +20,7 @@
   shell: |
     . CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF
-    ALTER USER SYS IDENTIFIED BY "hhhh";
+    ALTER USER {{ target_user | upper}} IDENTIFIED BY "{{ new_password }}";
     EXIT;
     EOF
   args:
