@@ -1,4 +1,11 @@
 ---
+- name: Check
+  shell: |
+    whoami
+    ls *.env
+    source CEBSTRGT_cenartrgtdb01.env
+  args:
+    executable: /bin/bash
 - name: Check account status of the target Oracle user
   shell: |
     whoami
