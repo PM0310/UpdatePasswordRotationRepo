@@ -2,10 +2,7 @@
 - name: Check account status of the target Oracle user
   shell: |
     whoami
-  register: jjj
-- name: Check account status of the target Oracle user
-  shell: |
-    whoami
+    . CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
     SELECT account_status FROM dba_users WHERE username = SYS
