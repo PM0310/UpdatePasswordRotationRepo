@@ -9,7 +9,8 @@
     SELECT account_status FROM dba_users WHERE username = SYS
     EXIT;
     EOF
-  executable: /bin/bash
+  args:
+    executable: /bin/bash
   register: account_status
   changed_when: false
 
