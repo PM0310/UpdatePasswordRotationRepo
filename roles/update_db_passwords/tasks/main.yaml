@@ -9,11 +9,9 @@
 - name: Check account status of the target Oracle user
   shell: |
     source CEBSTRGT_cenartrgtdb01.env
-    source /udb01/app/oracle/EBSTRGT/19.3.0/CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF | grep -o 'OPEN'
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
     SELECT account_status FROM dba_users WHERE username = 'SYS';
-    SELECT username, account_status FROM dba_users WHERE username = 'SYS';
     EXIT;
     EOF
   args:
