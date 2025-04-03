@@ -3,7 +3,7 @@
   shell: |
     whoami
     ls *.env
-    source CEBSTRGT_cenartrgtdb01.env
+    source /udb01/app/oracle/EBSTRGT/19.3.0/CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
     SELECT account_status FROM dba_users WHERE username = SYS
