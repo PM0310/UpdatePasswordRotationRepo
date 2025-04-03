@@ -9,7 +9,7 @@
     EOF
   register: account_status
   changed_when: false
-  
+
 #UPPER('{{ target_user }}');
 #{{ target_user }}
 #{{ new_password }}
@@ -28,7 +28,7 @@
   when: account_status.stdout | trim == "OPEN"
   register: password_change
 
-- name: Debug: Show password change result
+- name: Debug Show password change result
   debug:
     var: password_change.stdout
   when: password_change is defined
