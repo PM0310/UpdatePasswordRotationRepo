@@ -1,7 +1,7 @@
 ---
 - name: Check account status of the target Oracle user
   shell: |
-    source CEBSTRGT_cenartrgtdb01.env
+    source {{ ORACLE_HOME }}/{{ CDB_ENV }}
     sqlplus / as sysdba <<EOF | grep -o 'OPEN'
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
     SELECT account_status FROM dba_users WHERE username = '{{ target_user | upper} }}';
@@ -18,7 +18,7 @@
 
 - name: Change password for user if account is OPEN
   shell: |
-    . CEBSTRGT_cenartrgtdb01.env
+    source {{ ORACLE_HOME }}/{{ CDB_ENV }}
     sqlplus / as sysdba <<EOF
     ALTER USER {{ target_user | upper}} IDENTIFIED BY "{{ new_password }}";
     EXIT;

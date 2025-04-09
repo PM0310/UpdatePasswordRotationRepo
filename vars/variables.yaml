@@ -11,3 +11,8 @@ secret_server_domain: "ad"
 special_characters: "@$#*"
 password_length: 12
 password_reset_results: []
+#DB Vars
+ORACLE_HOME: /udb01/app/oracle/EBSTRGT/19.3.0
+CDB_ENV: CEBSTRGT_cenartrgtdb01.env
+PDB_ENV: EBSTRGT_cenartrgtdb01.env
+PDB: EBSTRGT
