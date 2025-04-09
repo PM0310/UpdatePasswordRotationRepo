@@ -64,7 +64,7 @@
 # -------------------------------------------------------------------
 - name: Generate new password
   set_fact:
-    final_password: lookup('password', '/dev/null', length=16, chars=ascii_letters,digits)
+    final_password: "{{ lookup('password', '/dev/null', length=16, chars=ascii_letters,digits) }}"
   #no_log: true
 
 # -------------------------------------------------------------------
@@ -157,7 +157,7 @@
     
     - name: Validate old Oracle password
       shell: |
-        sqlplus sys/"{{ target_user | upper }}"@"{{ old_password }}" as sysdba <<EOF
+        sqlplus {{ target_user | upper }}/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
       register: validation
