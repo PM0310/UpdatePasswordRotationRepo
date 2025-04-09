@@ -45,7 +45,7 @@
     return_content: yes
   register: existing_secret
   delegate_to: localhost
-  no_log: true
+  #no_log: true
 
 - name: Set secret details facts and capture old password
   set_fact:
@@ -57,7 +57,7 @@
     secret_id: "{{ existing_secret.json.id }}"
     comment: "Updating password for secret: {{ secret_name }}"
     old_password: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).itemValue }}"
-  no_log: true
+  #no_log: true
 
 # -------------------------------------------------------------------
 # Generate a new password for rotation
@@ -65,6 +65,7 @@
 - name: Generate new password
   set_fact:
     final_password: "{{ lookup('password', '/dev/null', length=16, chars=ascii_letters,digits) }}"
+  #no_log: true
 
 # -------------------------------------------------------------------
 # Oracle DB: Update password and then update Secret Server (with rollback)
@@ -93,7 +94,7 @@
 
     - name: Validate new Oracle password
       shell: |
-        sqlplus sys/"{{ target_user | upper }}"@"{{ final_password }}" as sysdba <<EOF
+        sqlplus "{{ target_user | upper }}"/"{{ final_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
       register: validation
@@ -120,7 +121,7 @@
           comment: "{{ comment }}"
       register: update_response
       delegate_to: localhost
-      no_log: true
+      #no_log: true
       failed_when: update_response.status not in [200, 201, 204]
 
     - name: Send success email notification
