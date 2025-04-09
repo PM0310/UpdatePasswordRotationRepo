@@ -146,7 +146,8 @@
         host: "{{ smtp_server }}"
         port: "{{ smtp_port }}"
         subject: "Password Rotation Succeeded for {{ target_user }}"
-        to: "{{ user_details.email_recipients | join(', ') }}"
+        #to: "{{ user_details.email_recipients | join(', ') }}"
+        to: "sampat.andavarapu@centroid.com"
         body: >
           Password rotation succeeded for {{ target_user }}.
           The Oracle DB password and Secret Server have been updated successfully.
@@ -201,7 +202,7 @@
         host: "{{ smtp_server }}"
         port: "{{ smtp_port }}"
         subject: "Password Rotation Failed for {{ target_user }}"
-        to: "{{ user_details.email_recipients | join(', ') }}"
+        to: "sampat.andavarapu@centroid.com"
         body: >
           Password rotation failed for {{ target_user }}.
           The Secret Server update did not succeed. The Oracle DB password has been rolled back to its previous value.
