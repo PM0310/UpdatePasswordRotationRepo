@@ -1,6 +1,6 @@
-- name: Store group_name globally 
+- name: Retrieve group_name from hostvars if missing
   set_fact:
-    global_group_name: "{{ group_name }}"
+    group_name: "{{ group_name | default(hostvars[inventory_hostname].global_group_name, true) }}"
 
 - name: Debug - Verify received secret_name and group_name
   debug:
