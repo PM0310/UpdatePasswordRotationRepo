@@ -1,23 +1,39 @@
-- name: Rotate passwords for each inventory group
-  hosts: all
+- name: Loop over each group to rotate passwords
+  hosts: localhost
   gather_facts: no
-  run_once: true
-
   vars_files:
     - vars/variables.yaml
-
+  vars:
+    target_groups: "{{ ansible_limit.split(',') }}"  # Groups passed in --limit
   tasks:
-    - name: Parse secret_name into group and user
-      set_fact:
-        group_name: "{{ item.secret_name.rsplit('_', 1)[0] }}"
-        user_name: "{{ item.secret_name.rsplit('_', 1)[1] | lower }}"
-        secret_name: "{{ item.secret_name }}"
-        email_recipients: "{{ item.email_recipients }}"
-      loop: "{{ users }}"
+    - name: Rotate password for each group
+      include_tasks: tasks/group_rotate_wrapper.yaml
+      loop: "{{ target_groups }}"
+      loop_control:
+        loop_var: target_group
+  
+  
+  
+        # - name: Rotate passwords for each inventory group
+        #   hosts: all
+        #   gather_facts: no
+        #   run_once: true
 
-    - name: Include fetch_existing_pwd role
-      include_role:
-        name: 1fetch_existing_pwd
+        #   vars_files:
+        #     - vars/variables.yaml
+
+        #   tasks:
+        #     - name: Parse secret_name into group and user
+        #       set_fact:
+        #         group_name: "{{ item.secret_name.rsplit('_', 1)[0] }}"
+        #         user_name: "{{ item.secret_name.rsplit('_', 1)[1] | lower }}"
+        #         secret_name: "{{ item.secret_name }}"
+        #         email_recipients: "{{ item.email_recipients }}"
+        #       loop: "{{ users }}"
+
+        #     - name: Include fetch_existing_pwd role
+        #       include_role:
+        #         name: 1fetch_existing_pwd
 
     # - name: Include generate_password role
     #   include_role:

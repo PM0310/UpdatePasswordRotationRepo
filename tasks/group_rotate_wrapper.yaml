@@ -1,0 +1,17 @@
+- name: Set group vars
+  set_fact:
+    group_name: "{{ target_group }}"
+
+- name: Rotate password for hosts in {{ target_group }}
+  include_role:
+    name: 1fetch_existing_pwd
+  delegate_to: localhost
+
+- name: Add hosts from group {{ target_group }} to dynamic group
+  add_host:
+    name: "{{ item }}"
+    groups: dynamic_group
+  loop: "{{ groups[target_group] }}"
+
+- name: Run rotation on all hosts in dynamic group
+  include_tasks: tasks/host_rotate_wrapper.yaml
