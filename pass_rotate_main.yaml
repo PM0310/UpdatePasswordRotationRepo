@@ -4,11 +4,79 @@
   run_once: true
 
   vars_files:
-    - vars/variables.yaml  
+    - vars/variables.yaml
 
-  roles:
-    - generate_password
-    - fetch_existing_pwd
+  tasks:
+    - name: Parse secret_name into group and user
+      set_fact:
+        group_name: "{{ item.secret_name.rsplit('_', 1)[0] }}"
+        user_name: "{{ item.secret_name.rsplit('_', 1)[1] | lower }}"
+        secret_name: "{{ item.secret_name }}"
+        email_recipients: "{{ item.email_recipients }}"
+      loop: "{{ users }}"
+
+    - name: Include fetch_existing_pwd role
+      include_role:
+        name: 1fetch_existing_pwd
+
+    # - name: Include generate_password role
+    #   include_role:
+    #     name: 2generate_password
+
+    # - name: Include rotate_password role
+    #   include_role:
+    #     name: 3rotate_password
+
+    # - name: Include update_secret_server role
+    #   include_role:
+    #     name: 4update_secret_server
+
+    # - name: Check if new password equals old (simulate failure condition)
+    #   set_fact:
+    #     rotation_failed: "{{ existing_pwd == new_password }}"
+
+    # - name: Rollback if rotation failed
+    #   include_role:
+    #     name: 5rollback_password
+    #   when: rotation_failed
+
+    # - name: Notify users
+    #   include_role:
+    #     name: 6notify_users
+    #   vars:
+    #     result: "{{ 'FAILED' if rotation_failed else 'SUCCESS' }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# - name: Rotate passwords for each inventory group
+#   hosts: all
+#   gather_facts: no
+#   run_once: true
+
+#   vars_files:
+#     - vars/variables.yaml  
+
+#   roles:
+#     - generate_password
+#     - fetch_existing_pwd
 
 
     # - update_target_passwords
