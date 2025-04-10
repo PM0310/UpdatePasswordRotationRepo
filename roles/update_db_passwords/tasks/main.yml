@@ -145,6 +145,7 @@
       mail:
         host: "{{ smtp_server }}"
         port: "{{ smtp_port }}"
+        from: "{{ email_sender }}"
         subject: "Password Rotation Succeeded for {{ target_user }}"
         #to: "{{ user_details.email_recipients | join(', ') }}"
         to: "sampat.andavarapu@centroid.com"
@@ -201,6 +202,7 @@
       mail:
         host: "{{ smtp_server }}"
         port: "{{ smtp_port }}"
+        from: "{{ email_sender }}"
         subject: "Password Rotation Failed for {{ target_user }}"
         to: sampat.andavarapu@centroid.com
         body: >
