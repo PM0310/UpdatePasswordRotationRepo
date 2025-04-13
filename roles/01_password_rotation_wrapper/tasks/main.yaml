@@ -1,0 +1,27 @@
+
+- name: "DEBUG: Inventory limit passed by OLAM"
+  debug:
+    msg: "Processing host: {{ inventory_hostname }} | Groups: {{ group_names }}"
+
+- name: "Set primary group (assuming 1 group per host)"
+  set_fact:
+    user_group: "{{ group_names[0] }}"
+
+- name: "DEBUG: User group determined"
+  debug:
+    msg: "Primary group selected: {{ user_group }}"
+
+- name: "Set user list from inventory group vars"
+  set_fact:
+    user_list: "{{ vars[user_group]['users'] | default([]) }}"
+
+- name: "DEBUG: Users from inventory group"
+  debug:
+    var: user_list
+
+- name: "Include group processor role for this group"
+  include_role:
+    name: 02_process_group
+  vars:
+    current_user_group: "{{ user_group }}"
+    current_user_list: "{{ user_list }}"
