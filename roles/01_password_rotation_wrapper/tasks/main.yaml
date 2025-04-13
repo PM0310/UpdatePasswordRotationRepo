@@ -11,9 +11,33 @@
   debug:
     msg: "Primary group selected: {{ user_group }}"
 
-- name: "Set user list from inventory group vars"
+# - name: "Set user list from inventory group vars"
+#   set_fact:
+#     user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
+
+
+- name: Retrieve users from hostvars for group {{ group_name }}
   set_fact:
-    user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
+    group_users: "{{ hostvars[reference_host].users | selectattr('secret_name', 'defined') | list }}"
+
+- name: Ensure group_users is not empty before proceeding
+  fail:
+    msg: "No valid users found for group {{ group_name }}. Check inventory configuration."
+  when: group_users | length == 0
+
+- name: Extract user details for group {{ group_name }}
+  set_fact:
+    user_details:
+      username: "{{ group_users[0].secret_name.split('_')[-1] | lower }}"
+      email_recipients: "{{ group_users[0].email_recipients | default([]) }}"
+      secret_name: "{{ group_users[0].secret_name }}"
+
+- name: Debug - Show extracted user details
+  debug:
+    msg: "Group: {{ group_name }}, Username: {{ user_details.username }}, Secret Name: {{ user_details.secret_name }}, Email Recipients: {{ user_details.email_recipients }}"
+
+
+
 
 - name: "DEBUG: Users from inventory group"
   debug:
