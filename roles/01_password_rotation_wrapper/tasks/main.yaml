@@ -13,7 +13,7 @@
 
 - name: "Set user list from inventory group vars"
   set_fact:
-    user_list: "{{ vars[user_group]['users'] | default([]) }}"
+    user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
 
 - name: "DEBUG: Users from inventory group"
   debug:
