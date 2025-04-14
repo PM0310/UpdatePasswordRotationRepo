@@ -1,8 +1,0 @@
-- name: Rotate password on remote hosts
-  hosts: dynamic_group
-  gather_facts: no
-  any_errors_fatal: true
-  tasks:
-    - name: Include rotate role
-      include_role:
-        name: 3rotate_password

@@ -47,7 +47,7 @@
     return_content: yes
   register: existing_secret
   delegate_to: localhost
-  # no_log: true  # Hide passwords in logs
+  no_log: true  # Hide passwords in logs
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
@@ -55,7 +55,6 @@
     folder_id: "{{ (existing_secret.json['folderId']) }}"
     field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
     item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
-    existing_pwd: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemValue }}"
     secret_name: "{{ existing_secret.json['name'] }}"
     secret_id: "{{ existing_secret.json['id'] }}"
     comment: "Updating password for secret :   {{ secret_name }}"
@@ -92,4 +91,4 @@
       comment: "{{ comment }}"
   register: update_response
   delegate_to: localhost
-  # no_log: true
+  no_log: true
