@@ -1,4 +1,3 @@
-
 - name: "DEBUG: Inventory limit passed by OLAM"
   debug:
     msg: "Processing host: {{ inventory_hostname }} | Groups: {{ group_names }}"
@@ -10,11 +9,6 @@
 - name: "DEBUG: User group determined"
   debug:
     msg: "Primary group selected: {{ user_group }}"
-
-# - name: "Set user list from inventory group vars"
-#   set_fact:
-#     user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
-
 
 - name: Set a reference host for group {{ user_group }}
   set_fact:
@@ -41,15 +35,25 @@
     msg: "Group: {{ user_group }}, Username: {{ user_details.username }}, Secret Name: {{ user_details.secret_name }}, Email Recipients: {{ user_details.email_recipients }}"
 
 
+- name: Fetch secret from Secret Server for {{ user_details.secret_name }}
+  uri:
+    url: "{{ secret_server_base_url }}/api/v1/secrets/name/{{ user_details.secret_name | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ secret_server_token }}"
+      Content-Type: "application/json"
+    return_content: yes
+    status_code: 200
+    validate_certs: yes
+  delegate_to: localhost
+  run_once: true
+  register: fetched_secret
 
+- name: Set current password from response
+  set_fact:
+    current_password: "{{ (fetched_secret.json.items[0].items | selectattr('fieldName', 'equalto', 'Password') | list)[0].itemValue }}"
+  when: fetched_secret.json.items[0].items is defined
 
-# - name: "DEBUG: Users from inventory group"
-#   debug:
-#     var: user_list
-
-# - name: "Include group processor role for this group"
-#   include_role:
-#     name: 02_process_group
-#   vars:
-#     current_user_group: "{{ user_group }}"
-#     current_user_list: "{{ user_list }}"
+- name: Debug - Current password
+  debug:
+    msg: "Group {{ user_group }} current password fetched: {{ current_password }}"
