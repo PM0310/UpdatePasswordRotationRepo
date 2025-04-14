@@ -10,12 +10,14 @@
   debug:
     msg: "Primary group selected: {{ user_group }}"
 
+
+
 - name: Extract user details for group {{ user_group }}
   set_fact:
     user_details:
-      username: "{{ group_names[0].secret_name.split('_')[-1] | lower }}"
-      email_recipients: "{{ group_names[0].email_recipients | default([]) }}"
-      secret_name: "{{ group_names[0].secret_name }}"
+      username: "{{ hostvars[inventory_hostname]['secret_name'].split('_')[-1] | lower }}"
+      email_recipients: "{{ hostvars[inventory_hostname]['email_recipients'] | default([]) }}"
+      secret_name: "{{ hostvars[inventory_hostname]['secret_name'] }}"
 
 ###
 
