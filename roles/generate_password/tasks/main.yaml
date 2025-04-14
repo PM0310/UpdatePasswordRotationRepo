@@ -30,6 +30,6 @@
     name: "global_passwords"
     group_pwds: "{{ group_passwords }}"
   run_once: true
-  no_log: true  # Hide passwords in logs
+  # no_log: true  # Hide passwords in logs
 
 
