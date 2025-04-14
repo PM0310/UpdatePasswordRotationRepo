@@ -40,7 +40,7 @@
     url: "{{ secret_server_base_url }}/api/v1/secrets/name/{{ user_details.secret_name | urlencode }}"
     method: GET
     headers:
-      Authorization: "Bearer {{ secret_server_token }}"
+      Authorization: "Bearer {{ tkn }}"
       Content-Type: "application/json"
     return_content: yes
     status_code: 200
