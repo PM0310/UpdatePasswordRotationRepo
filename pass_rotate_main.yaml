@@ -9,5 +9,5 @@
   roles:
     - generate_password
     - update_target_passwords
-    - update_secret_server
+    # - update_secret_server
     # - send_email_notification

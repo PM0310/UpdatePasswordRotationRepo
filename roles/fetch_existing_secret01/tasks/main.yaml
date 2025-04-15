@@ -1,0 +1,60 @@
+- name: Debug - Verify received secret_name and group_name
+  debug:
+    msg: "Processing host: {{ inventory_hostname }}, Group: {{ group_name }}, Secret Name: {{ secret_name }}"
+
+- name: Set variables
+  set_fact:
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
+    tkn: "{{ tkn }}"
+
+
+- name: Retrieve matching secrets
+  uri:
+    url: "{{ api_url }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tkn }}"
+    return_content: yes
+  register: secrets_found
+  delegate_to: localhost
+
+
+- name: Debug API response
+  debug:
+    var: secrets_found.json
+
+
+- name: Find the ID for the specified secret_name
+  set_fact:
+    found_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
+
+
+- name: Debug found_secret_id
+  debug:
+    msg: "Secret ID found: {{ found_secret_id }} for secret_name: {{ secret_name }}"
+
+
+- name: Set api_url to get the secret details from the secret_id
+  set_fact:
+    api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}" 
+
+- name: Retrieve existing secret
+  uri:
+    url: "{{ api_url2 }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tkn }}"
+    return_content: yes
+  register: existing_secret
+  delegate_to: localhost
+  # no_log: true  # Hide passwords in logs
+
+- name: Set siteId, fieldId, itemId for password
+  set_fact:
+    site_id: "{{ (existing_secret.json['siteId']) }}"
+    folder_id: "{{ (existing_secret.json['folderId']) }}"
+    field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+    item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+    secret_name: "{{ existing_secret.json['name'] }}"
+    secret_id: "{{ existing_secret.json['id'] }}"
+    comment: "Updating password for secret :   {{ secret_name }}"
