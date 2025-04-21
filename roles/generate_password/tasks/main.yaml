@@ -44,16 +44,34 @@
 
 
 
+# - name: Generate passwords for filtered users
+#   set_fact:
+#     user_passwords: >-
+#       {{
+#         dict(
+#           filtered_users | map(attribute='secret_name') |
+#           zip(lookup('password', '/dev/null length=16', wantlist=True) | list)
+#         )
+#       }}
+#   # no_log: true  # Hide passwords in logs
+
 - name: Generate passwords for filtered users
   set_fact:
     user_passwords: >-
       {{
         dict(
           filtered_users | map(attribute='secret_name') |
-          zip(lookup('password', '/dev/null length=16', wantlist=True) | list)
+          zip(
+            lookup(
+              'password',
+              '/dev/null length=16 count=' ~ (filtered_users | length),
+              wantlist=True
+            )
+          )
         )
       }}
-  # no_log: true  # Hide passwords in logs
+  # no_log: true
+
 
 
 
@@ -83,42 +101,5 @@
   # no_log: true  # Hide passwords in logs
 
 
-# - name: Debug - Show hosts in each selected group
-#   debug:
-#     msg: "Hosts in group {{ item }}: {{ groups[item] }}"
-#   loop: "{{ limited_groups }}"
-
-# - name: Initialize group_passwords as an empty dictionary
-#   set_fact:
-#     group_passwords: {}
-
-# - name: Generate passwords for each group and store in a dictionary
-#   set_fact:
-#     group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
-#   with_items: "{{ limited_groups }}"
-#   no_log: true  # Hide passwords in logs
-
-# - name: Set up per-user password dictionary for each group
-#   set_fact:
-#     group_passwords: >-
-#       {{
-#         group_passwords | combine({
-#           item: dict(
-#             lookup('vars', item + '_users') | map(attribute='secret_name') |
-#             zip(
-#               lookup('password', '/dev/null length=16', wantlist=True) | list
-#             )
-#           )
-#         }, recursive=True)
-#       }}
-#   loop: "{{ limited_groups }}"
-#   # no_log: true  # Hide passwords in logs
-
-# - name: Store group passwords globally
-#   add_host:
-#     name: "global_passwords"
-#     group_pwds: "{{ group_passwords }}"
-#   run_once: true
-#   # no_log: true  # Hide passwords in logs
 
 
