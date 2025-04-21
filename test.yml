@@ -19,4 +19,4 @@
 
     - name: Print group variables
       debug:
-        msg: "{{ groups['Cen_NonProd_APP'] }}"
+        msg: "{{ groups['Cen_NonProd_APP'][0].user }}"
