@@ -55,22 +55,25 @@
 #       }}
 #   # no_log: true  # Hide passwords in logs
 
-- name: Generate passwords for filtered users
+- name: Generate list of passwords for filtered users
+  set_fact:
+    temp_passwords: "{{ temp_passwords | default([]) + [lookup('password', '/dev/null length=16')] }}"
+  loop: "{{ filtered_users }}"
+  loop_control:
+    label: "{{ item.secret_name }}"
+  no_log: true
+
+- name: Combine usernames and passwords into dictionary
   set_fact:
     user_passwords: >-
       {{
         dict(
           filtered_users | map(attribute='secret_name') |
-          zip(
-            lookup(
-              'password',
-              '/dev/null length=16 count=' ~ (filtered_users | length),
-              wantlist=True
-            )
-          )
+          zip(temp_passwords)
         )
       }}
-  # no_log: true
+  no_log: true
+
 
 
 
