@@ -19,11 +19,27 @@
   set_fact:
     group_passwords: {}
 
-- name: Generate passwords for each group and store in a dictionary
+# - name: Generate passwords for each group and store in a dictionary
+#   set_fact:
+#     group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
+#   with_items: "{{ limited_groups }}"
+#   no_log: true  # Hide passwords in logs
+
+- name: Set up per-user password dictionary for each group
   set_fact:
-    group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
-  with_items: "{{ limited_groups }}"
-  no_log: true  # Hide passwords in logs
+    group_passwords: >-
+      {{
+        group_passwords | combine({
+          item: dict(
+            lookup('vars', item + '_users') | map(attribute='secret_name') |
+            zip(
+              lookup('password', '/dev/null length=16', wantlist=True) | list
+            )
+          )
+        }, recursive=True)
+      }}
+  loop: "{{ limited_groups }}"
+  # no_log: true  # Hide passwords in logs
 
 - name: Store group passwords globally
   add_host:
