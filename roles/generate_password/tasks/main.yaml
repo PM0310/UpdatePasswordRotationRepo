@@ -53,7 +53,7 @@
           zip(lookup('password', '/dev/null length=16', wantlist=True) | list)
         )
       }}
-  no_log: true  # Hide passwords in logs
+  # no_log: true  # Hide passwords in logs
 
 
 
@@ -72,7 +72,7 @@
   set_fact:
     group_passwords: "{{ group_passwords | combine({ item: lookup('password', '/dev/null length=16') }) }}"
   loop: "{{ limited_groups }}"
-  no_log: true
+  # no_log: true
 
 
 - name: Store group passwords globally
