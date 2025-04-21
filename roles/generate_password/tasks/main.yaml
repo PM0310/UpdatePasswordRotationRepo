@@ -32,10 +32,11 @@
   set_fact:
     filtered_users: >-
       {{
-        users
-        | selectattr('secret_name', 'search', '^(' + limited_groups | join('|') + ')_')
-        | list
+        users |
+        selectattr('secret_name', 'search', '^(?i)(' + limited_groups | map('upper') | join('|') + ')_') |
+        list
       }}
+
 
 - name: Debug - Filtered users
   debug:
