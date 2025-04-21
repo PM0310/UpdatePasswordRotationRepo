@@ -4,3 +4,6 @@
     - name: Print limited groups
       debug:
         msg: "Limited groups are: {{ limited_groups }}"
+    - name: print group variables
+      debug:
+        msg: "{{ groups['Cen_NonProd_APP']}}"
