@@ -72,7 +72,7 @@
           zip(temp_passwords)
         )
       }}
-  no_log: true
+  # no_log: true
 
 
 
