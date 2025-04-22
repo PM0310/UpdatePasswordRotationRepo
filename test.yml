@@ -57,110 +57,110 @@
       set_fact:
         password_rotation_items: []
 
-    - name: "🔄 2) For each target group, collect users and retrieve/generate passwords"
-      loop: "{{ target_groups }}"
-      loop_control:
-        loop_var: group_name
-      vars:
-        # pull the group’s user list from any one of its hosts
-        group_users: "{{ hostvars[ groups[group_name][0] ].users | default([]) }}"
-      block:
+    # - name: "🔄 2) For each target group, collect users and retrieve/generate passwords"
+    #   loop: "{{ target_groups }}"
+    #   loop_control:
+    #     loop_var: group_name
+    #   vars:
+    #     # pull the group’s user list from any one of its hosts
+    #     group_users: "{{ hostvars[ groups[group_name][0] ].users | default([]) }}"
+    #   block:
 
-        - name: Debug – show users in {{ group_name }}
-          debug:
-            msg: "{{ group_name }} → {{ group_users }}"
+    #     - name: Debug – show users in {{ group_name }}
+    #       debug:
+    #         msg: "{{ group_name }} → {{ group_users }}"
 
-        - name: Process each user in {{ group_name }}
-          loop: "{{ group_users }}"
-          loop_control:
-            loop_var: user_entry
-          vars:
-            secret_name: "{{ user_entry.secret_name }}"
-            db_type:       "{{ user_entry.db_type }}"
-            email_list:    "{{ user_entry.email_recipients }}"
-          block:
+    #     - name: Process each user in {{ group_name }}
+    #       loop: "{{ group_users }}"
+    #       loop_control:
+    #         loop_var: user_entry
+    #       vars:
+    #         secret_name: "{{ user_entry.secret_name }}"
+    #         db_type:       "{{ user_entry.db_type }}"
+    #         email_list:    "{{ user_entry.email_recipients }}"
+    #       block:
 
-            # ─ Steps to retrieve the old password ─────────────────────
+    #         # ─ Steps to retrieve the old password ─────────────────────
 
-            - name: Debug – verifying secret_name & group_name
-              debug:
-                msg: "Secret: {{ secret_name }}  in group {{ group_name }}"
+    #         - name: Debug – verifying secret_name & group_name
+    #           debug:
+    #             msg: "Secret: {{ secret_name }}  in group {{ group_name }}"
 
-            - name: Set API URL for secret search
-              set_fact:
-                api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
+    #         - name: Set API URL for secret search
+    #           set_fact:
+    #             api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
 
-            - name: Search secrets on Secret Server
-              uri:
-                url: "{{ api_url }}"
-                method: GET
-                headers:
-                  Authorization: "Bearer {{ tkn }}"
-                return_content: yes
-              register: secrets_found
-              delegate_to: localhost
+    #         - name: Search secrets on Secret Server
+    #           uri:
+    #             url: "{{ api_url }}"
+    #             method: GET
+    #             headers:
+    #               Authorization: "Bearer {{ tkn }}"
+    #             return_content: yes
+    #           register: secrets_found
+    #           delegate_to: localhost
 
-            - name: Extract secret ID for {{ secret_name }}
-              set_fact:
-                found_secret_id: >-
-                  {{
-                    (secrets_found.json.records
-                      | selectattr('name','equalto',secret_name)
-                      | map(attribute='id')
-                      | list
-                    )[0]
-                  }}
+    #         - name: Extract secret ID for {{ secret_name }}
+    #           set_fact:
+    #             found_secret_id: >-
+    #               {{
+    #                 (secrets_found.json.records
+    #                   | selectattr('name','equalto',secret_name)
+    #                   | map(attribute='id')
+    #                   | list
+    #                 )[0]
+    #               }}
 
-            - name: Fetch full secret details
-              uri:
-                url: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}"
-                method: GET
-                headers:
-                  Authorization: "Bearer {{ tkn }}"
-                return_content: yes
-              register: existing_secret
-              delegate_to: localhost
+    #         - name: Fetch full secret details
+    #           uri:
+    #             url: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}"
+    #             method: GET
+    #             headers:
+    #               Authorization: "Bearer {{ tkn }}"
+    #             return_content: yes
+    #           register: existing_secret
+    #           delegate_to: localhost
 
-            - name: Capture old_password
-              set_fact:
-                old_password: >-
-                  {{
-                    (existing_secret.json.items
-                      | selectattr('slug','equalto','password')
-                      | first
-                    ).itemValue
-                  }}
+    #         - name: Capture old_password
+    #           set_fact:
+    #             old_password: >-
+    #               {{
+    #                 (existing_secret.json.items
+    #                   | selectattr('slug','equalto','password')
+    #                   | first
+    #                 ).itemValue
+    #               }}
 
-            # ─ Step to generate the new password ──────────────────────
+    #         # ─ Step to generate the new password ──────────────────────
 
-            - name: Generate a new random password
-              set_fact:
-                new_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits') }}"
+    #         - name: Generate a new random password
+    #           set_fact:
+    #             new_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits') }}"
 
-            # ─ Append to our master list ──────────────────────────────
+    #         # ─ Append to our master list ──────────────────────────────
 
-            - name: Append record for {{ secret_name }} in {{ group_name }}
-              set_fact:
-                password_rotation_items: >-
-                  {{ password_rotation_items + [ {
-                      'group':               group_name,
-                      'secret_name':         secret_name,
-                      'db_type':             db_type,
-                      'email_recipients':    email_list,
-                      'retrieved_password':  old_password,
-                      'generated_password':  new_password,
-                      'password_success':    null,
-                      'secretserver_success':null
-                    } ] }}
+    #         - name: Append record for {{ secret_name }} in {{ group_name }}
+    #           set_fact:
+    #             password_rotation_items: >-
+    #               {{ password_rotation_items + [ {
+    #                   'group':               group_name,
+    #                   'secret_name':         secret_name,
+    #                   'db_type':             db_type,
+    #                   'email_recipients':    email_list,
+    #                   'retrieved_password':  old_password,
+    #                   'generated_password':  new_password,
+    #                   'password_success':    null,
+    #                   'secretserver_success':null
+    #                 } ] }}
 
-      # end of block for each group
+    #   # end of block for each group
 
-    - name: Debug – final password_rotation_items
-      debug:
-        var: password_rotation_items
+    # - name: Debug – final password_rotation_items
+    #   debug:
+    #     var: password_rotation_items
 
-    - name: Make password_rotation_items available to later roles
-      set_fact:
-        password_rotation_items: "{{ password_rotation_items }}"
-      # you can also write this out to a JSON file or export it as an Ansible fact
+    # - name: Make password_rotation_items available to later roles
+    #   set_fact:
+    #     password_rotation_items: "{{ password_rotation_items }}"
+    #   # you can also write this out to a JSON file or export it as an Ansible fact
 
