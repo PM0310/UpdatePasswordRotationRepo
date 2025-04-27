@@ -35,15 +35,25 @@
       set_fact:
         target_groups: []
 
-    - name: Identify groups containing any of the limited hosts
-      vars:
-        all_groups: "{{ groups.keys() | difference(['all']) | list }}"
-      loop: "{{ all_groups }}"
-      loop_control:
-        loop_var: candidate_group
+    # - name: Identify groups containing any of the limited hosts
+    #   vars:
+    #     all_groups: "{{ groups.keys() | difference(['all']) | list }}"
+    #   loop: "{{ all_groups }}"
+    #   loop_control:
+    #     loop_var: candidate_group
+    #   set_fact:
+    #     target_groups: "{{ target_groups + [ candidate_group ] }}"
+    #   when: "(groups[candidate_group] | intersect(ansible_play_batch) | length) > 0"
+
+    - name: Normalize ansible_limit and extract valid groups
       set_fact:
-        target_groups: "{{ target_groups + [ candidate_group ] }}"
-      when: "(groups[candidate_group] | intersect(ansible_play_batch) | length) > 0"
+        target_groups: "{{ ansible_limit.split(',') | map('trim') | list }}"
+      when: ansible_limit is defined
+
+    - name: Fallback to all group prefixes if ansible_limit not defined
+      set_fact:
+        target_groups: "{{ users | map(attribute='secret_name') | map('regex_replace', '^(.*?)_.*', '\\1') | unique | list }}"
+      when: ansible_limit is not defined
 
     - name: Debug – show target groups
       debug:
