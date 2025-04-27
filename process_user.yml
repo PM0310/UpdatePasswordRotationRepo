@@ -41,7 +41,7 @@
 - name: Capture old_password
   set_fact:
     old_password: >-
-      {{ (existing_secret.json.items
+      {{ (existing_secret.json['items']
            | selectattr('slug','equalto','password')
            | first
          ).itemValue }}
