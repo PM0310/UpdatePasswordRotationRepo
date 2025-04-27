@@ -27,7 +27,7 @@
 ---
 # roles/password_rotation_role1/tasks/main.yml
 - name: "🔍 1) Determine which inventory groups were limited"
-  hosts: localhost
+  hosts: all
   gather_facts: false
   run_once: true
   tasks:
