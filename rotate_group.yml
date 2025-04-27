@@ -1,0 +1,16 @@
+---
+# roles/password_rotation_role1/tasks/rotate_group.yml
+
+- name: Debug – show users in {{ group_name }}
+  debug:
+    msg: "{{ group_name }} → {{ group_users }}"
+
+- name: Process each user in {{ group_name }}
+  include_tasks: process_user.yml
+  loop: "{{ group_users }}"
+  loop_control:
+    loop_var: user_entry
+  vars:
+    secret_name:     "{{ user_entry.secret_name }}"
+    db_type:         "{{ user_entry.db_type }}"
+    email_list:      "{{ user_entry.email_recipients }}"

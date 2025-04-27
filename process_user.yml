@@ -1,0 +1,66 @@
+---
+# roles/password_rotation_role1/tasks/process_user.yml
+
+- name: Debug – verifying secret_name & group_name
+  debug:
+    msg: "Secret: {{ secret_name }} in group {{ group_name }}"
+
+- name: Set API URL for secret search
+  set_fact:
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
+
+- name: Search secrets on Secret Server
+  uri:
+    url: "{{ api_url }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tkn }}"
+    return_content: yes
+  register: secrets_found
+  delegate_to: localhost
+
+- name: Extract secret ID for {{ secret_name }}
+  set_fact:
+    found_secret_id: >-
+      {{ (secrets_found.json.records
+           | selectattr('name','equalto', secret_name)
+           | map(attribute='id')
+           | list
+         )[0] }}
+
+- name: Fetch full secret details
+  uri:
+    url: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tkn }}"
+    return_content: yes
+  register: existing_secret
+  delegate_to: localhost
+
+- name: Capture old_password
+  set_fact:
+    old_password: >-
+      {{ (existing_secret.json.items
+           | selectattr('slug','equalto','password')
+           | first
+         ).itemValue }}
+
+- name: Generate a new random password
+  set_fact:
+    new_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits') }}"
+
+- name: Append record for {{ secret_name }} in {{ group_name }}
+  set_fact:
+    password_rotation_items: >-
+      {{ password_rotation_items + [ {
+          'group':               group_name,
+          'secret_name':         secret_name,
+          'db_type':             db_type,
+          'email_recipients':    email_list,
+          'retrieved_password':  old_password,
+          'generated_password':  new_password,
+          'password_success':    null,
+          'secretserver_success':null
+        } ] }}
+
