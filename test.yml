@@ -33,6 +33,6 @@
   run_once: true
 
   roles:
-    - fetch_generate_passwords
+    - fetch_generate_password
 
 
