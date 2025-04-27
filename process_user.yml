@@ -55,14 +55,10 @@
     password_rotation_items: >-
       {{ password_rotation_items + [ {
           'group':               group_name,
-          'secret_name':         secret_name,
-          'db_type':             db_type,
-          'email_recipients':    email_list,
           'retrieved_password':  old_password,
           'generated_password':  new_password,
           'password_success':    false,
           'secretserver_success':false,
-          'user':user,
           'user_details': user_entry
         } ] }}
 

@@ -10,8 +10,3 @@
   loop: "{{ group_users }}"
   loop_control:
     loop_var: user_entry
-  vars:
-    secret_name:     "{{ user_entry.secret_name }}"
-    db_type:         "{{ user_entry.db_type }}"
-    email_list:      "{{ user_entry.email_recipients }}"
-    user: "{{ user_entry.user }}"
