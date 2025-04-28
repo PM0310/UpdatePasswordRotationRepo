@@ -7,7 +7,6 @@
   loop: "{{ groups[rotation_item.group] }}"
   loop_control:
     loop_var: target_host
-  delegate_to: "{{ target_host }}"
   include_tasks: process_item.yml
 
 - name: Append updated rotation_item
