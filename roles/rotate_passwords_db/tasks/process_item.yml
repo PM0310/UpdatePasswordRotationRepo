@@ -1,0 +1,38 @@
+- block:
+    - name: Update password for target Oracle user on CDB
+      shell: |
+        source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+        sqlplus / as sysdba <<EOF
+        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+        EXIT;
+        EOF
+      when: rotation_item.user_details['db_type'] == 'CDB'
+      delegate_to: "{{ target_host }}"
+
+    - name: Update password for target Oracle user on PDB
+      shell: |
+        source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+        sqlplus / as sysdba <<EOF
+        ALTER SESSION SET CONTAINER=EBS_PDB;
+        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+        EXIT;
+        EOF
+      when: rotation_item.user_details['db_type'] == 'PDB'
+      delegate_to: "{{ target_host }}"
+
+    - name: Validate new Oracle password
+      shell: |
+        source {{ ORACLE_HOME }}/{{ (rotation_item.user_details['db_type'] == 'CDB') | ternary(CDB_ENV, PDB_ENV) }}
+        sqlplus "{{ rotation_item.user_details['user']  | upper }}"/"{{ rotation_item.generated_password }}"@EBSTRGT as sysdba <<EOF
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      register: validation
+      changed_when: false
+      delegate_to: "{{ target_host }}"
+  rescue:
+    - name: Capture DB failure message on {{ target_host }}
+      set_fact:
+        db_success: false
+        error_msg_db: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"

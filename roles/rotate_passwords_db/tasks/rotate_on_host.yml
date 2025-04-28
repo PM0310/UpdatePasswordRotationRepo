@@ -1,0 +1,19 @@
+- name: Initialize flags for {{ rotation_item.secret_name }} in {{ rotation_item.group }}
+  set_fact:
+    db_success: true
+    error_msg_db: ''
+
+- name: Rotate password on each host of {{ rotation_item.group }}
+  loop: "{{ groups[rotation_item.group] }}"
+  loop_control:
+    loop_var: target_host
+  include_tasks: process_item.yml
+
+- name: Append updated rotation_item
+  set_fact:
+    updated_items: >-
+      {{ updated_items + [ rotation_item
+          | combine({
+              'password_success': db_success,
+              'error_msg_db': error_msg_db
+            }) ] }}
