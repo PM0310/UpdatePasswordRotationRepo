@@ -23,7 +23,7 @@
     - name: Validate new Oracle password
       shell: |
         source {{ ORACLE_HOME }}/{{ (rotation_item.user_details['db_type'] == 'CDB') | ternary(CDB_ENV, PDB_ENV) }}
-        sqlplus "{{ rotation_item.user_details['user']  | upper }}"/"{{ rotation_item.generated_password }}"@EBSTRGT as sysdba <<EOF
+        sqlplus "{{ rotation_item.user  | upper }}"/"{{ rotation_item.generated_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
       args:
