@@ -35,5 +35,6 @@
   roles:
     - fetch_generate_passwords
     - rotate_passwords_db
+    - update_secret_server
 
 
