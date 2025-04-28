@@ -27,13 +27,13 @@
           Content-Type: "application/json"
         body_format: json
         body:
-          id: "{{ rotation_item.secret_id }}"
+          id: "{{ rotation_item.secret_details.secret_id }}"
           name: "{{ rotation_item.user_details.secret_name }}"
-          siteId: "{{ rotation_item.site_id }}"
-          folderId: "{{ rotation_item.folder_id }}"
+          siteId: "{{ rotation_item.secret_details.site_id }}"
+          folderId: "{{ rotation_item.secret_details.folder_id }}"
           items:
-            - fieldId: "{{ rotation_item.field_id }}"
-              itemId: "{{ rotation_item.item_id }}"
+            - fieldId: "{{ rotation_item.secret_details.field_id }}"
+              itemId: "{{ rotation_item.secret_details.item_id }}"
               itemValue: "{{ rotation_item.generated_password }}"
           active: true
           comment: "{{ rotation_item.comment | default('Password rotated on ' + ansible_date_time.iso8601) }}"
