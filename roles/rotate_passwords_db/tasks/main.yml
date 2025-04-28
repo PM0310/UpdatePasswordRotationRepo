@@ -1,0 +1,16 @@
+- name: Initialize updated_items list
+  set_fact:
+    updated_items: []
+
+- name: Loop through each password rotation item
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: rotation_item
+  vars:
+    group_hosts: "{{ groups[rotation_item.group] }}"
+  include_tasks: rotate_on_host.yml
+
+- name: Expose updated password_rotation_items for next role
+  set_fact:
+    password_rotation_items: "{{ updated_items }}"
+
