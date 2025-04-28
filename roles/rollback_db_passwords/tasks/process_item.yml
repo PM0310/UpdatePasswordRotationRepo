@@ -3,7 +3,7 @@
       shell: |
         source {{ ORACLE_HOME }}/{{ CDB_ENV }}
         sqlplus / as sysdba <<EOF
-        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.retrieved_password }}";
         EXIT;
         EOF
       when: rotation_item.user_details['db_type'] == 'CDB'
@@ -14,7 +14,7 @@
         source {{ ORACLE_HOME }}/{{ PDB_ENV }}
         sqlplus / as sysdba <<EOF
         ALTER SESSION SET CONTAINER=EBS_PDB;
-        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.retrieved_password }}";
         EXIT;
         EOF
       when: rotation_item.user_details['db_type'] == 'PDB'
@@ -23,7 +23,7 @@
     - name: Validate new Oracle password
       shell: |
         source {{ ORACLE_HOME }}/{{ (rotation_item.user_details['db_type'] == 'CDB') | ternary(CDB_ENV, PDB_ENV) }}
-        sqlplus "{{ rotation_item.user_details['user']  | upper }}"/"{{ rotation_item.generated_password }}"@EBSTRGT as sysdba <<EOF
+        sqlplus "{{ rotation_item.user_details['user']  | upper }}"/"{{ rotation_item.retrieved_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
       args:
@@ -31,8 +31,14 @@
       register: validation
       changed_when: false
       delegate_to: "{{ target_host }}"
-  rescue:
-    - name: Capture DB failure message on {{ target_host }}
+    
+    - name: Mark rollback success on {{ target_host }}
       set_fact:
-        db_success: false
-        error_msg_db: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"
+        # if still true, remains true
+        rollback_db_success: "{{ rollback_db_success and true }}"
+  rescue:
+    - name: Capture rollback failure on {{ target_host }}
+      set_fact:
+        rollback_db_success: false
+        failed_rollbacks: >-
+          {{ failed_rollbacks + [ { 'host': target_host, 'msg': (ansible_failed_result.msg | default(ansible_failed_result.stderr)) } ] }}

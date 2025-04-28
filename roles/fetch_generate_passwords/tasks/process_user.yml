@@ -1,6 +1,4 @@
 ---
-# roles/password_rotation_role1/tasks/process_user.yml
-
 - name: Debug – verifying secret_name & group_name
   debug:
     msg: "Secret: {{ secret_name }} in group {{ group_name }}"

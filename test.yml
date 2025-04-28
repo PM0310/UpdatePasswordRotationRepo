@@ -36,5 +36,7 @@
     - fetch_generate_passwords
     - rotate_passwords_db
     - update_secret_server
+    - rollback_db_passwords
+
 
 
