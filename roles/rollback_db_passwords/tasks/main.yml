@@ -9,7 +9,16 @@
   vars:
     group_hosts: "{{ groups[rotation_item.group] }}"
   include_tasks: rotate_on_host.yml
-  when: rotation_item.password_success is false or rotation_item.secretserver_success is false 
+  when: rotation_item.password_success is false or rotation_item.secretserver_success is false
+
+- name: Loop through each password rotation item
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: rotation_item
+  set_fact:
+    updated_items: >-
+          {{ updated_items + [ rotation_item ] }}
+  when: rotation_item.password_success and rotation_item.secretserver_success
 
 - name: Expose updated password_rotation_items for next role
   set_fact:

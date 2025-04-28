@@ -8,6 +8,15 @@
   loop_control:
     loop_var: rotation_item
   when: rotation_item.password_success | default(false)
+
+- name: Loop through each password rotation item
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: rotation_item
+  set_fact:
+    updated_items: >-
+          {{ updated_items + [ rotation_item ] }}
+  when: rotation_item.password_success is false
   
 - name: Expose final password_rotation_items
   set_fact:
