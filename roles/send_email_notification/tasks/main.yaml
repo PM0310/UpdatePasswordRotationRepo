@@ -44,10 +44,16 @@
               <th>Group</th>
               <th>Hosts</th>
               <th>User</th>
+              {% if rotation_items[0].user_details.db_type is defined %}
+                <th>DB Type</th>
+              {% endif %}
               <th>Password Success</th>
               <th>SecretServer Success</th>
               <th>Error DB</th>
               <th>Error Secret</th>
+              <th>Rollback Success</th>
+              <th>Failed Rollbacks</th>
+              <th>Secret Server Link</th>
             </tr>
           </thead>
           <tbody>
@@ -56,10 +62,16 @@
               <td>{{ item.group }}</td>
               <td>{{ groups[item.group] }}
               <td>{{ item.user_details.user }}</td>
+              {% if rotation_items[0].user_details.db_type is defined %}
+                <th>{{ item.user_details.db_type }}</th>
+              {% endif %}
               <td>{{ item.password_success }}</td>
               <td>{{ item.secretserver_success }}</td>
               <td>{{ item.error_msg_db or '-' }}</td>
               <td>{{ item.error_msg_secret or '-' }}</td>
+              <td>{{ item.rollback_db_success | default('–') }}</td>
+              <td>{{ item.failed_rollbacks | default('–') }}</td>
+              <td>https://centroid.secretservercloud.com/app/#/secrets/{{ item.secret_details.secret_id }}/general</td>
             </tr>
           {% endfor %}
           </tbody>
