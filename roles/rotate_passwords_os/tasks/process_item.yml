@@ -1,0 +1,10 @@
+- block:
+    - name: Update password on target hosts
+      shell: echo "{{ rotation_item.generated_password }}" | passwd --stdin {{ rotation_item.user_details['user'] | upper }}
+      become: yes
+      delegate_to: "{{ target_host }}"
+  rescue:
+    - name: Capture OS failure message on {{ target_host }}
+      set_fact:
+      os_success: false
+      error_msg_os: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"

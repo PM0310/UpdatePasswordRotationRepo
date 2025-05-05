@@ -49,7 +49,7 @@
               {% endif %}
               <th>Password Success</th>
               <th>SecretServer Success</th>
-              <th>Error DB</th>
+              <th>Error password</th>
               <th>Error Secret</th>
               <th>Rollback Success</th>
               <th>Failed Rollbacks</th>
@@ -67,7 +67,7 @@
               {% endif %}
               <td>{{ item.password_success }}</td>
               <td>{{ item.secretserver_success }}</td>
-              <td>{{ item.error_msg_db or '-' }}</td>
+              <td>{{ item.error_msg_password_applied or '-' }}</td>
               <td>{{ item.error_msg_secret or '-' }}</td>
               <td>{{ item.rollback_db_success | default('–') }}</td>
               <td>{{ item.failed_rollbacks | default('–') }}</td>
