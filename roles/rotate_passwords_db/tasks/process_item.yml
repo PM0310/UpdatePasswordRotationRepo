@@ -90,9 +90,8 @@
       set_fact:
         rollback_db_success: "{{ rollback_db_success and true }}"
 
-  rescue:
-    - name: Capture rollback failure on {{ target_host }}
+  rescue: 
+    - name: Capture DB failure message on {{ target_host }}
       set_fact:
-        rollback_db_success: false
-        failed_rollbacks: >-
-          {{ failed_rollbacks + [ { 'host': target_host, 'msg': (ansible_failed_result.msg | default(ansible_failed_result.stderr | default('Unknown error'))) } ] }}
+        db_success: false
+        error_msg_db: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"

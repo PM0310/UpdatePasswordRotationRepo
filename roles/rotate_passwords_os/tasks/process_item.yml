@@ -6,5 +6,5 @@
   rescue:
     - name: Capture OS failure message on {{ target_host }}
       set_fact:
-      os_success: false
-      error_msg_os: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"
+        os_success: false
+        error_msg_os: "{{ ansible_failed_result.msg | default(ansible_failed_result.stderr) }}"
