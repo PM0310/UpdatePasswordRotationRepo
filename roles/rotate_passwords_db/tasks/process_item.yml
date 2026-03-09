@@ -86,10 +86,6 @@
       changed_when: false
       delegate_to: "{{ target_host }}"
 
-    - name: Mark rollback success on {{ target_host }}
-      set_fact:
-        rollback_db_success: "{{ rollback_db_success and true }}"
-
   rescue: 
     - name: Capture DB failure message on {{ target_host }}
       set_fact:
