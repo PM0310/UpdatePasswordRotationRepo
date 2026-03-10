@@ -60,7 +60,7 @@
         sqlplus -s / as sysdba <<EOF
           WHENEVER SQLERROR EXIT FAILURE
           SET FEEDBACK OFF
-          ALTER SESSION SET CONTAINER=EBS_PDB;
+          ALTER SESSION SET CONTAINER=EBSTRGT;
           ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
           EXIT;
         EOF
