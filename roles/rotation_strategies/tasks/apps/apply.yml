@@ -11,10 +11,15 @@
     appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
     system_password: "{{ rotation_item.dependent_passwords.system_password }}"
 
-- name: Change APPS password using FNDCPASS
+- name: Change APPS password using AFPASSWD
   shell: |
     source {{ hostvars[target_host].EBS_ENV_FILE }}
-    FNDCPASS apps/{{ appsuser_password }} 0 Y system/{{ system_password }} SYSTEM APPLSYS {{ target_password }}
+    {
+      printf '%s\n' "{{ appsuser_password }}"
+      printf '%s\n' "{{ system_password }}"
+      printf '%s\n' "{{ target_password }}"
+      printf '%s\n' "{{ target_password }}"
+    } | AFPASSWD -c apps@{{ hostvars[target_host].DB_SID }} -s APPLSYS
   args:
     executable: /bin/bash
   register: apps_pwd_change
