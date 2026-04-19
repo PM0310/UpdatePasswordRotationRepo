@@ -3,16 +3,16 @@
     target_host: "{{ current_host }}"
   block:
     - name: Apply phase
-      include_tasks: "strategies/{{ rotation_item.user_details.type }}/apply.yml"
+      include_tasks: "rotation_strategies/{{ rotation_item.user_details.type }}/apply.yml"
       vars:
         operation_type: "{{ operation_type | default('rotate') }}"
 
     - name: Post phase (only for rotate)
-      include_tasks: "strategies/{{ rotation_item.user_details.type }}/post.yml"
+      include_tasks: "rotation_strategies/{{ rotation_item.user_details.type }}/post.yml"
       when: operation_type | default('rotate') == 'rotate'
 
     - name: Validate phase (only for rotate)
-      include_tasks: "strategies/{{ rotation_item.user_details.type }}/validate.yml"
+      include_tasks: "rotation_strategies/{{ rotation_item.user_details.type }}/validate.yml"
       when: operation_type | default('rotate') == 'rotate'
 
   rescue:
