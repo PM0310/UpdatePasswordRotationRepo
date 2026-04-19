@@ -2,22 +2,25 @@
   set_fact:
     updated_items: []
 
-- name: Loop through items with successful DB rotation
+- name: Loop through items with successful rotation (DB or apps)
   include_tasks: secret_update.yml
   loop: "{{ password_rotation_items }}"
   loop_control:
     loop_var: rotation_item
-  when: rotation_item.password_success | default(false)
+  when: >
+    (rotation_item.password_success | default(false)) or
+    (rotation_item.apply_success | default(false))
 
-- name: Loop through each password rotation item
+- name: Loop through items that failed rotation (no secret update)
+  set_fact:
+    updated_items: "{{ updated_items + [rotation_item] }}"
   loop: "{{ password_rotation_items }}"
   loop_control:
     loop_var: rotation_item
-  set_fact:
-    updated_items: >-
-          {{ updated_items + [ rotation_item ] }}
-  when: rotation_item.password_success is false
-  
+  when: >
+    not (rotation_item.password_success | default(false)) and
+    not (rotation_item.apply_success | default(false))
+
 - name: Expose final password_rotation_items
   set_fact:
     password_rotation_items: "{{ updated_items }}"

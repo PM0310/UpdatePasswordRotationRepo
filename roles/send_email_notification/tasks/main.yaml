@@ -1,27 +1,3 @@
-# - name: Send Email Notification
-#   community.general.mail:
-#     host: "{{ smtp_server }}"
-#     port: "{{ smtp_port }}"
-#     from: "{{ email_sender }}"
-#     to: "{{ user_details.email_recipients | join(', ') }}"
-#     subject: "Password Rotation - Group: {{ group_name }}"
-#     body: |
-#       Hi,
-
-#       The password for the following user has been successfully rotated:
-
-#       Group: {{ group_name }}
-#       Hosts: {{ groups[group_name] | join(', ') }}
-#       User: {{ user_details.username }}
-#       Secret Name: {{ user_details.secret_name }}
-#       Secret ID: {{ found_secret_id }}
-#       URL: https://centroid.secretservercloud.com/app/#/secrets/{{ found_secret_id }}/general
-
-#       Thanks & Regards,
-#       Automation Team
-#   delegate_to: localhost
-#   run_once: true
-
 - name: Send password rotation report email
   vars:
     rotation_items: "{{ password_rotation_items }}"
@@ -47,39 +23,40 @@
               {% if rotation_items[0].user_details.db_type is defined %}
                 <th>DB Type</th>
               {% endif %}
-              <th>Password Success</th>
+              <th>Apply Success</th>
               <th>SecretServer Success</th>
-              <th>Error password</th>
-              <th>Error Secret</th>
+              <th>Errors (Rotation)</th>
+              <th>Secret Server Error</th>
               <th>Rollback Success</th>
-              <th>Failed Rollbacks</th>
+              <th>Errors (Rollback)</th>
               <th>Secret Server Link</th>
             </tr>
           </thead>
           <tbody>
           {% for item in rotation_items %}
+            {% set apply_ok = item.apply_success if item.apply_success is defined else item.password_success %}
+            {% set rotation_errors = item.rotation_errors if item.rotation_errors is defined else ( [{'msg': item.error_msg_password_applied}] if item.error_msg_password_applied else [] ) %}
+            {% set rollback_ok = item.rollback_success if item.rollback_success is defined else false %}
+            {% set rollback_errors = item.rollback_errors if item.rollback_errors is defined else ( item.failed_rollbacks if item.failed_rollbacks is defined else [] ) %}
             <tr>
               <td>{{ item.group }}</td>
-              <td>{{ groups[item.group] }}
+              <td>{{ groups[item.group] | join(', ') }}</td>
               <td>{{ item.user_details.user }}</td>
               {% if rotation_items[0].user_details.db_type is defined %}
-                <th>{{ item.user_details.db_type }}</th>
+                <td>{{ item.user_details.db_type | default('-') }}</td>
               {% endif %}
-              <td>{{ item.password_success }}</td>
+              <td>{{ apply_ok }}</td>
               <td>{{ item.secretserver_success }}</td>
-              <td>{{ item.error_msg_password_applied | default('-')  }}</td>
+              <td>{{ rotation_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
               <td>{{ item.error_msg_secret | default('-') }}</td>
-              <td>{{ item.rollback_success | default('–') }}</td>
-              <td>{{ item.failed_rollbacks | default('–') }}</td>
+              <td>{{ rollback_ok }}</td>
+              <td>{{ rollback_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
               <td>
-              <a
-                href="{{ secret_server_base_url }}/app/#/secrets/{{ item.secret_details.secret_id }}/general"
-                target="_blank"
-                style="text-decoration: none; color: #1a73e8;"
-              >
+              <a href="{{ secret_server_base_url }}/app/#/secrets/{{ item.secret_details.secret_id }}/general"
+                 target="_blank" style="text-decoration: none; color: #1a73e8;">
                 View {{ item.secret_details.secret_name }}
               </a>
-            </td>
+              </td>
             </tr>
           {% endfor %}
           </tbody>
