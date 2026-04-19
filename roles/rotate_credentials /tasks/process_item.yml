@@ -1,12 +1,28 @@
 - block:
-    - name: Include apply strategy for {{ rotation_item.rotation_strategy }}
-      include_tasks: "{{ role_path }}/tasks/strategies/{{ rotation_item.rotation_strategy }}/apply.yml"
 
-    - name: Include validate strategy for {{ rotation_item.rotation_strategy }}
-      include_tasks: "{{ role_path }}/tasks/strategies/{{ rotation_item.rotation_strategy }}/validate.yml"
+    - name: Apply phase
+      include_tasks: "{{ role_path }}/tasks/strategies/apps/apply.yml"
+
+    - name: Post phase
+      include_tasks: "{{ role_path }}/tasks/strategies/apps/post.yml"
+      when: rotation_item.apply_success
+
+    - name: Validate phase
+      include_tasks: "{{ role_path }}/tasks/strategies/apps/validate.yml"
+      when: rotation_item.post_success
 
   rescue:
-    - name: Capture EBS failure on {{ target_host }}
+
+    - name: Capture failure
+      set_fact:
+        rotation_item: >-
+          {{ rotation_item | combine({
+            'apply_success': false,
+            'error_messages': rotation_item.error_messages + ['Apply phase failed']
+          }) }}
+          
+  rescue:
+    - name: Capture credential rotation failure on {{ target_host }}
       set_fact:
         ebs_success: false
         error_messages_ebs: >-

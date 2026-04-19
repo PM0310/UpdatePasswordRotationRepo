@@ -1,0 +1,10 @@
+---
+- name: Fetch secret {{ dep_item.value }}
+  include_tasks: fetch_secret.yml
+  vars:
+    secret_name: "{{ dep_item.value }}"
+    result_var: "_dep_secret"
+
+- name: Add to dependent_passwords dict
+  set_fact:
+    dependent_passwords: "{{ dependent_passwords | combine({dep_item.key: _dep_secret.password}) }}"

@@ -1,13 +1,25 @@
-- name: Initialize updated_items list
+- name: Initialize results list
   set_fact:
-    updated_items: []
+    processed_items: []
 
-- name: Loop through each password rotation item
+- name: Process each rotation item
+  include_tasks: process_item.yml
   loop: "{{ password_rotation_items }}"
   loop_control:
     loop_var: rotation_item
-  include_tasks: rotate_on_host.yml
+  when: >
+    (operation_type == 'rotate') or
+    (
+      operation_type == 'rollback' and
+      (
+        rotation_item.apply_success == true and
+        (
+          rotation_item.post_success == false or
+          rotation_item.secretserver_success == false
+        )
+      )
+    )
 
-- name: Expose updated password_rotation_items for next role
+- name: Update global list
   set_fact:
-    password_rotation_items: "{{ updated_items }}"
+    password_rotation_items: "{{ processed_items }}"

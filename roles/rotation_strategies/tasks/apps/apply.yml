@@ -1,45 +1,3 @@
-- name: Change APPS password using AFPASSWD
-  shell: |
-    source {{ EBS_ENV_FILE }}
-    {
-      printf '%s\n' "{{ appsuser_password }}"
-      printf '%s\n' "{{ system_password }}"
-      printf '%s\n' "{{ target_password }}"
-      printf '%s\n' "{{ target_password }}"
-    } | AFPASSWD -c apps@{{ DB_SID }} -s APPLSYS
-  args:
-    executable: /bin/bash
-  register: apps_pwd_change
-  no_log: true
-  failed_when: apps_pwd_change.rc != 0 or 'ORA-' in apps_pwd_change.stdout or 'ERROR' in apps_pwd_change.stdout
-  delegate_to: "{{ target_host }}"
-
-- name: Run AutoConfig after APPS password change
-  shell: |
-    source {{ EBS_ENV_FILE }}
-    {{ ADMIN_SCRIPTS_HOME }}/adautocfg.sh
-  args:
-    executable: /bin/bash
-  register: autoconfig_result
-  failed_when: autoconfig_result.rc != 0 or 'ORA-' in autoconfig_result.stdout or 'ERROR' in autoconfig_result.stdout
-  delegate_to: "{{ target_host }}"
-
-- name: Update WLS datasource password for APPS
-  shell: |
-    source {{ EBS_ENV_FILE }}
-    perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl <<EOF
-    updateDSPassword
-    apps
-    {{ target_password }}
-    EOF
-  args:
-    executable: /bin/bash
-  register: wls_ds_update
-  failed_when: wls_ds_update.rc != 0 or 'ORA-' in wls_ds_update.stdout or 'ERROR' in wls_ds_update.stdout
-  delegate_to: "{{ target_host }}"
-
-
-
 - name: Ensure SYSTEM dependency exists for APPS
   assert:
     that:
@@ -47,14 +5,14 @@
       - rotation_item.dependent_credentials.system_password | length > 0
     fail_msg: "SYSTEM password not found for APPS rotation item {{ rotation_item.user_details.secret_name }}"
 
-# 🔥 derive passwords
+# derive passwords
 - name: Derive passwords
   set_fact:
     target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
     appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
     system_password: "{{ rotation_item.dependent_credentials.system_password }}"
 
-# 🔥 APPLY PHASE
+# APPLY PHASE
 - name: Change APPS password using AFPASSWD
   shell: |
     source {{ EBS_ENV_FILE }}
@@ -71,7 +29,7 @@
   failed_when: apps_pwd_change.rc != 0 or 'ORA-' in apps_pwd_change.stdout or 'ERROR' in apps_pwd_change.stdout
   delegate_to: "{{ target_host }}"
 
-# 🔥 mark apply success
+# mark apply success
 - name: Mark apply success
   set_fact:
     rotation_item: "{{ rotation_item | combine({'apply_success': true}) }}"
