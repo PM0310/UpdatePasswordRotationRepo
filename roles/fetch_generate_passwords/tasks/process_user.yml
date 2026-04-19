@@ -6,7 +6,7 @@
 - name: Fetch main secret
   include_tasks: fetch_secret.yml
   vars:
-    secret_name: "{{ secret_name }}"
+    current_secret_name: "{{ secret_name }}"
     result_var: "main_secret"
 
 - name: Set old password and secret details
