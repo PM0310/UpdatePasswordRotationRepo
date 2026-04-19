@@ -20,11 +20,7 @@
           {{ updated_items + [ rotation_item ] }}
   when: rotation_item.password_success and rotation_item.secretserver_success
 
-- name: Add back items that were not processed
+- name: Expose updated password_rotation_items for next role
   set_fact:
-    updated_items: "{{ updated_items + [item] }}"
-  loop: "{{ password_rotation_items }}"
-  loop_control:
-    loop_var: item
-  when: item not in updated_items
+    password_rotation_items: "{{ updated_items }}"
 
