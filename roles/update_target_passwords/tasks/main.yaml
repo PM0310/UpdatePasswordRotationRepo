@@ -1,5 +1,0 @@
-- name: Rotate password for each group
-  include_tasks: tasks/rotate_group_passwords.yaml
-  loop: "{{ limited_groups }}"
-  loop_control:
-    loop_var: group_name
