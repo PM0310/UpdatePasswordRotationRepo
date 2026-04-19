@@ -25,10 +25,9 @@
               {% endif %}
               <th>Apply Success</th>
               <th>SecretServer Success</th>
-              <th>Errors (Rotation)</th>
-              <th>Secret Server Error</th>
+              <th>Rotation Errors</th>
               <th>Rollback Success</th>
-              <th>Errors (Rollback)</th>
+              <th>Rollback Errors</th>
               <th>Secret Server Link</th>
             </tr>
           </thead>
@@ -48,7 +47,6 @@
               <td>{{ apply_ok }}</td>
               <td>{{ item.secretserver_success }}</td>
               <td>{{ rotation_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
-              <td>{{ item.error_msg_secret | default('-') }}</td>
               <td>{{ rollback_ok }}</td>
               <td>{{ rollback_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
               <td>
@@ -64,3 +62,4 @@
         <p>Regards,<br/>Automation Team</p>
       </body>
       </html>
+  when: mail_recipients | length > 0
