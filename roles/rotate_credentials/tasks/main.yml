@@ -3,7 +3,7 @@
     processed_items: []
 
 - name: Process each rotation item
-  include_tasks: process_item.yml
+  include_tasks: rotate_on_host.yml
   loop: "{{ password_rotation_items }}"
   loop_control:
     loop_var: rotation_item
