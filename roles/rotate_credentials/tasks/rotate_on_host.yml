@@ -18,8 +18,8 @@
 
 - name: Append results for {{ rotation_item.user_details.user }} (rotate)
   set_fact:
-    updated_items: >-
-      {{ updated_items + [ rotation_item | combine({
+    processed_items: >-
+      {{ processed_items + [ rotation_item | combine({
           'apply_success': rotation_success,
           'rotation_errors': rotation_errors
         }) ] }}
@@ -27,8 +27,8 @@
 
 - name: Append results for {{ rotation_item.user_details.user }} (rollback)
   set_fact:
-    updated_items: >-
-      {{ updated_items + [ rotation_item | combine({
+    processed_items: >-
+      {{ processed_items + [ rotation_item | combine({
           'rollback_success': rollback_success,
           'rollback_errors': rollback_errors
         }) ] }}
