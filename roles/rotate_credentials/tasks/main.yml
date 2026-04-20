@@ -39,6 +39,19 @@
 #     loop_var: item
 #   when: item not in processed_items
 
+- name: Add back items that were not processed
+  set_fact:
+    processed_items: "{{ processed_items + [original_item] }}"
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: original_item
+  when: >
+    processed_items | selectattr('group', 'equalto', original_item.group)
+                    | selectattr('user_details.type', 'equalto', original_item.user_details.type)
+                    | selectattr('user_details.user', 'equalto', original_item.user_details.user)
+                    | selectattr('secret_details.secret_name', 'equalto', original_item.secret_details.secret_name)
+                    | list | length == 0
+
 - name: Update global list
   set_fact:
     password_rotation_items: "{{ processed_items }}"
