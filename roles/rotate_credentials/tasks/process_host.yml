@@ -4,11 +4,16 @@
   block:
     - name: Apply phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/apply.yml"
+    
+    - name: Set apply_success true
+      set_fact:
+        rotation_item: "{{ rotation_item | combine({'apply_success': true}) }}"
+      when: apply_result is not failed
 
-    - name: Post phase (only for rotate)
+    - name: Post phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/post.yml"
 
-    - name: Validate phase (only for rotate)
+    - name: Validate phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/validate.yml"
 
   rescue:

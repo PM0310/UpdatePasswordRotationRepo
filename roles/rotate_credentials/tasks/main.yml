@@ -31,13 +31,13 @@
   #     )
   #   )
 
-- name: Add back items that were not processed
-  set_fact:
-    processed_items: "{{ processed_items + [item] }}"
-  loop: "{{ password_rotation_items }}"
-  loop_control:
-    loop_var: item
-  when: item not in processed_items
+# - name: Add back items that were not processed
+#   set_fact:
+#     processed_items: "{{ processed_items + [item] }}"
+#   loop: "{{ password_rotation_items }}"
+#   loop_control:
+#     loop_var: item
+#   when: item not in processed_items
 
 - name: Update global list
   set_fact:
