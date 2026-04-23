@@ -17,7 +17,7 @@
     - name: Run AutoConfig on all application tier nodes
       shell: |
         cd /tmp
-        source {{ hostvars[target_host].EBS_ENV_FILE }} run
+        echo "{{ target_password }}" | source {{ hostvars[target_host].EBS_ENV_FILE }} run
         {{ hostvars[target_host].ADMIN_SCRIPTS_HOME | default('$ADMIN_SCRIPTS_HOME') }}/adautocfg.sh
       args:
         executable: /bin/bash
