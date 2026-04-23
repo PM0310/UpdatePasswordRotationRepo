@@ -15,7 +15,7 @@
                  hostvars[target_host].app_tier_group in groups)
              else [target_host] }}
 
-    - name: Run AutoConfig on all application tier nodes (non‑interactive)
+    - name: Run AutoConfig on all application tier nodes
       expect:
         timeout: 3600
         chdir: /tmp
