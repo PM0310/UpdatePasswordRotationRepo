@@ -5,7 +5,7 @@
         target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
         appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
         system_password: "{{ rotation_item.dependent_passwords.system_password }}"
-        weblogic_password: "{{ rotation_item.dependent_passwords.weblogic_password }}"
+        weblogic_admin_password: "{{ rotation_item.dependent_passwords.weblogic_admin_password }}"
 
     - name: Determine app tier hosts (multi‑node or single‑node)
       set_fact:
@@ -47,7 +47,7 @@
           # Context file prompt – accept default by sending empty line (just a newline)
           "Enter the full path of Applications Context File.*:": ""
           # WebLogic AdminServer password
-          "Enter weblogic admin server password:": "{{ weblogic_password }}"
+          "Enter weblogic admin server password:": "{{ weblogic_admin_password }}"
           # New APPS user password
           "Enter the APPS user password:": "{{ target_password }}"
       register: ds_update
