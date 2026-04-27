@@ -77,7 +77,7 @@
     overall_post_success_rollback: "{{ processed_hosts | map(attribute='post_success') | list is all }}"
     overall_validate_success_rollback: "{{ processed_hosts | map(attribute='validate_success') | list is all }}"
     # For rollback we may not have post/validate – but we still capture them
-    overall_rollback_success: "{{ processed_hosts | map(attribute='rollback_success') | list is all(true) }}"
+    overall_rollback_success: "{{ processed_hosts | map(attribute='rollback_success') | list is all }}"
     all_rollback_errors: "{{ processed_hosts | map(attribute='rollback_errors') | list | flatten }}"
   when: operation_type | default('rotate') == 'rollback'
 
