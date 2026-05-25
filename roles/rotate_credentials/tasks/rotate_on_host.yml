@@ -21,9 +21,31 @@
   set_fact:
     processed_hosts: []
 
+- name: Derive rollback eligible hosts
+  set_fact:
+    rollback_hosts: >-
+      {{
+        (
+          rotation_item.host_results | default([])
+        )
+        | selectattr('apply_success', 'equalto', true)
+        | map(attribute='target_host')
+        | list
+      }}
+  when: operation_type == 'rollback'
+
+- name: Determine target hosts
+  set_fact:
+    target_hosts: >-
+      {{
+        rollback_hosts
+        if operation_type == 'rollback'
+        else groups[rotation_item.group]
+      }}
+
 - name: Process each host in {{ rotation_item.group }}
   include_tasks: process_host.yml
-  loop: "{{ groups[rotation_item.group] }}"
+  loop: "{{ target_hosts }}"
   loop_control:
     loop_var: current_host
 
@@ -34,9 +56,9 @@
 # -----------------------------------------------------------------------------
 - name: Compute overall success for rotate operation
   set_fact:
-    overall_apply_success: "{{ processed_hosts | map(attribute='apply_success') | list is all }}"
-    overall_post_success: "{{ processed_hosts | map(attribute='post_success') | list is all }}"
-    overall_validate_success: "{{ processed_hosts | map(attribute='validate_success') | list is all }}"
+    overall_apply_success: "{{ processed_hosts | map(attribute='apply_success') | min }}"
+    overall_post_success: "{{ processed_hosts | map(attribute='post_success') | min }}"
+    overall_validate_success: "{{ processed_hosts | map(attribute='validate_success') | min }}"
     all_rotation_errors: "{{ processed_hosts | map(attribute='rotation_errors') | list | flatten }}"
   when: operation_type | default('rotate') == 'rotate'
 
@@ -73,11 +95,20 @@
 # -----------------------------------------------------------------------------
 - name: Compute overall success for rollback operation
   set_fact:
-    overall_apply_success_rollback: "{{ processed_hosts | map(attribute='apply_success') | list is all }}"
-    overall_post_success_rollback: "{{ processed_hosts | map(attribute='post_success') | list is all }}"
-    overall_validate_success_rollback: "{{ processed_hosts | map(attribute='validate_success') | list is all }}"
+    overall_apply_success_rollback: "{{ ( processed_hosts | map(attribute='apply_success') | min  ) if (processed_hosts | length > 0) else true}}"
+    overall_post_success_rollback: "{{ ( processed_hosts | map(attribute='post_success') | min ) if (processed_hosts | length > 0) else true }}"
+    overall_validate_success_rollback: "{{ ( processed_hosts | map(attribute='validate_success') | min ) if (processed_hosts | length > 0) else true }}"
     # For rollback we may not have post/validate – but we still capture them
-    overall_rollback_success: "{{ processed_hosts | map(attribute='rollback_success') | list is all }}"
+    overall_rollback_success: >-
+      {{
+        (
+          processed_hosts
+          | map(attribute='rollback_success')
+          | min
+        )
+        if processed_hosts | length > 0
+        else true
+      }}
     all_rollback_errors: "{{ processed_hosts | map(attribute='rollback_errors') | list | flatten }}"
   when: operation_type | default('rotate') == 'rollback'
 

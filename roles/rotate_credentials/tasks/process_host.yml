@@ -14,12 +14,18 @@
     post_errors: []
     validate_success: false
     validate_errors: []
-    # Rotate‑specific overall flags
+    
+- name: Initialize phase outcome variables for {{ current_host }} for rotation phase
+  set_fact:
     rotation_success: true
     rotation_errors: []
-    # Rollback‑specific overall flags
+  when: operation_type | default('rotate') == 'rotate'
+
+- name: Initialize phase outcome variables for {{ current_host }} for rollback phase
+  set_fact:
     rollback_success: true
     rollback_errors: []
+  when: operation_type | default('rotate') == 'rollback'
 
 - name: Apply operation on {{ current_host }}
   vars:
@@ -28,10 +34,10 @@
     - name: Apply phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/apply.yml"
 
-    - name: Post phase (only for rotate)
+    - name: Post phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/post.yml"
 
-    - name: Validate phase (only for rotate)
+    - name: Validate phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/validate.yml"
   rescue:
     - name: Record error during rotation
@@ -67,22 +73,43 @@
       when: operation_type | default('rotate') == 'rollback'
 
   always:
-    - name: Build final per‑host item
+    - name: Build final per-host item
       set_fact:
         processed_host_item: >-
-          {{ rotation_item | combine({
-            'target_host': current_host,
-            'apply_success': apply_success,
-            'apply_errors': apply_errors,
-            'post_success': post_success,
-            'post_errors': post_errors,
-            'validate_success': validate_success,
-            'validate_errors': validate_errors,
-            'rotation_success': rotation_success,
-            'rotation_errors': rotation_errors,
-            'rollback_success': rollback_success,
-            'rollback_errors': rollback_errors
-          }) }}
+          {{
+            {
+              'target_host': current_host,
+
+              'apply_success': apply_success,
+              'apply_errors': apply_errors,
+
+              'post_success': post_success,
+              'post_errors': post_errors,
+
+              'validate_success': validate_success,
+              'validate_errors': validate_errors,
+
+              'rotation_success':
+                rotation_success
+                if operation_type == 'rotate'
+                else false,
+
+              'rotation_errors':
+                rotation_errors
+                if operation_type == 'rotate'
+                else [],
+
+              'rollback_success':
+                rollback_success
+                if operation_type == 'rollback'
+                else false,
+
+              'rollback_errors':
+                rollback_errors
+                if operation_type == 'rollback'
+                else []
+            }
+          }}
 
     - name: Append to global processed_hosts list
       set_fact:
