@@ -1,0 +1,44 @@
+---
+- block:
+
+    - name: Derive target password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+    - name: Rotate PDB password
+      shell: |
+        source {{ rotation_item.user_details.pdb_env }}
+
+        sqlplus -s / as sysdba <<EOF
+        ALTER SESSION SET CONTAINER={{ rotation_item.user_details.pdb_name }};
+        ALTER USER {{ rotation_item.user_details.username }} IDENTIFIED BY "{{ target_password }}";
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      register: db_pdb_apply_result
+      failed_when: db_pdb_apply_result.rc != 0
+
+    - name: Mark PDB apply success
+      set_fact:
+        apply_success: true
+
+  rescue:
+
+    - name: Mark PDB apply failure
+      set_fact:
+        apply_success: false
+        apply_errors: >-
+          {{
+            apply_errors | default([])
+            + [ansible_failed_result.msg | default('DB PDB apply failed')]
+          }}
+
+    - fail:
+        msg: "DB PDB apply failed"

@@ -1,0 +1,40 @@
+---
+- block:
+
+    - name: Derive validation password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+    - name: Validate OS login
+      shell: |
+        su - {{ rotation_item.user_details.username }} -c 'whoami'
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      become: yes
+      register: os_validate_result
+      changed_when: false
+      failed_when: os_validate_result.rc != 0
+
+    - name: Mark validation success
+      set_fact:
+        validate_success: true
+
+  rescue:
+
+    - name: Mark validation failure
+      set_fact:
+        validate_success: false
+        validate_errors: >-
+          {{
+            validate_errors | default([])
+            + [ansible_failed_result.msg | default('OS validation failed')]
+          }}
+
+    - fail:
+        msg: "OS validation failed"

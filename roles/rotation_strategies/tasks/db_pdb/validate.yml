@@ -1,0 +1,44 @@
+---
+- block:
+
+    - name: Derive validation password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+    - name: Validate PDB login
+      shell: |
+        source {{ rotation_item.user_details.pdb_env }}
+
+        sqlplus -s {{ rotation_item.user_details.username }}/"{{ target_password }}"@{{ rotation_item.user_details.service_name }} <<EOF
+        select 'VALID' from dual;
+        exit;
+        EOF
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      register: db_pdb_validate_result
+      changed_when: false
+      failed_when: "'VALID' not in db_pdb_validate_result.stdout"
+
+    - name: Mark PDB validation success
+      set_fact:
+        validate_success: true
+
+  rescue:
+
+    - name: Mark PDB validation failure
+      set_fact:
+        validate_success: false
+        validate_errors: >-
+          {{
+            validate_errors | default([])
+            + [ansible_failed_result.msg | default('DB PDB validation failed')]
+          }}
+
+    - fail:
+        msg: "DB PDB validation failed"

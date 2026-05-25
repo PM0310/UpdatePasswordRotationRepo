@@ -1,0 +1,17 @@
+---
+- block:
+
+    - name: Mark PDB post success
+      set_fact:
+        post_success: true
+
+  rescue:
+
+    - name: Mark PDB post failure
+      set_fact:
+        post_success: false
+        post_errors: >-
+          {{
+            post_errors | default([])
+            + [ansible_failed_result.msg | default('DB PDB post failed')]
+          }}

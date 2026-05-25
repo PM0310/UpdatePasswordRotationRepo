@@ -1,0 +1,39 @@
+---
+- block:
+
+    - name: Derive target password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+    - name: Rotate OS password
+      shell: |
+        echo "{{ rotation_item.user_details.username }}:{{ target_password }}" | chpasswd
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      become: yes
+      register: os_apply_result
+      failed_when: os_apply_result.rc != 0
+
+    - name: Mark apply success
+      set_fact:
+        apply_success: true
+
+  rescue:
+
+    - name: Mark apply failure
+      set_fact:
+        apply_success: false
+        apply_errors: >-
+          {{
+            apply_errors | default([])
+            + [ansible_failed_result.msg | default('OS apply phase failed')]
+          }}
+
+    - fail:
+        msg: "OS apply phase failed"
