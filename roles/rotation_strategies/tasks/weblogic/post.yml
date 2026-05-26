@@ -1,21 +1,5 @@
 ---
-- block:
-    - name: Derive target password
-      set_fact:
-        target_password: >-
-          {{
-            rotation_item.generated_password
-            if operation_type == 'rotate'
-            else rotation_item.retrieved_password
-          }}
-
-        previous_password: >-
-          {{
-            rotation_item.retrieved_password
-            if operation_type == 'rotate'
-            else rotation_item.generated_password
-          }}
-    
+- block:    
     - name: Determine app tier hosts (list, group, multi‑node or single‑node)
       set_fact:
         app_tier_hosts: >-
@@ -40,18 +24,19 @@
       delegate_to: "{{ target_host }}"
       register: admin_server_stop_result
       failed_when: admin_server_stop_result.rc != 0
-
+   
     - name: Start all EBS services
       shell: |
-        . {{ hostvars[target_host].EBS_ENV_FILE }}
-
-        $ADMIN_SCRIPTS_HOME/adstrtal.sh apps/{{ rotation_item.dependent_passwords.apps_password }}
+        cd /tmp
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
+        { echo "apps"; echo "{{ rotation_item.dependent_passwords.apps_password  }}"; echo "{{ system_password }}"; } | adstrtal.sh apps@{{ hostvars[target_host].DB_SID }}
       args:
         executable: /bin/bash
-      delegate_to: "{{ dependent_host }}"
+      delegate_to: "{{ item }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
       loop: "{{ app_tier_hosts }}"
-      loop_control:
-        loop_var: dependent_host
+      when: restart_services | default(false)
       register: start_services_result
       failed_when: start_services_result.rc != 0
 

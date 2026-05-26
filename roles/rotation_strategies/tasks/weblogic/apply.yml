@@ -30,18 +30,19 @@
                 else [target_host]
             )
           }}
-
+  
     - name: Stop all EBS services
       shell: |
-        . {{ hostvars[target_host].EBS_ENV_FILE }}
-
-        $ADMIN_SCRIPTS_HOME/adstpall.sh apps/{{ rotation_item.dependent_passwords.apps_password }}
+        cd /tmp
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
+        { echo "apps"; echo "{{ rotation_item.dependent_passwords.apps_password  }}"; echo "{{ system_password }}"; } | adstpall.sh apps@{{ hostvars[target_host].DB_SID }}
       args:
         executable: /bin/bash
-      delegate_to: "{{ dependent_host }}"
+      delegate_to: "{{ item }}"
       loop: "{{ app_tier_hosts }}"
-      loop_control:
-        loop_var: dependent_host
+      when: restart_services | default(false)
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
       register: stop_services_result
       failed_when: stop_services_result.rc != 0
 
