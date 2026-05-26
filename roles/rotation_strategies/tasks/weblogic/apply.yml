@@ -1,3 +1,4 @@
+---
 - block:
 
     - name: Derive target password
@@ -15,36 +16,74 @@
             if operation_type == 'rotate'
             else rotation_item.generated_password
           }}
+      
+    - name: Determine app tier hosts (list, group, multi‑node or single‑node)
+      set_fact:
+        app_tier_hosts: >-
+          {{
+            (hostvars[target_host].app_tier_group | type_debug == 'list')
+            | ternary(
+                hostvars[target_host].app_tier_group,
+                groups[hostvars[target_host].app_tier_group]
+                if hostvars[target_host].app_tier_group is string
+                and hostvars[target_host].app_tier_group in groups
+                else [target_host]
+            )
+          }}
+
+    - name: Stop all EBS services
+      shell: |
+        . {{ hostvars[target_host].EBS_ENV_FILE }}
+
+        $ADMIN_SCRIPTS_HOME/adstpall.sh apps/{{ rotation_item.dependent_passwords.apps_password }}
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ dependent_host }}"
+      loop: "{{ app_tier_hosts }}"
+      loop_control:
+        loop_var: dependent_host
+      register: stop_services_result
+      failed_when: stop_services_result.rc != 0
 
     - name: Start Admin Server
       shell: |
-        . {{ rotation_item.user_details.run_env }}
+        . {{ hostvars[target_host].EBS_ENV_FILE }}
 
         $ADMIN_SCRIPTS_HOME/adadminsrvctl.sh start
       args:
         executable: /bin/bash
       delegate_to: "{{ target_host }}"
-      register: admin_server_start
-      failed_when: admin_server_start.rc != 0
+      register: admin_server_start_result
+      failed_when: admin_server_start_result.rc != 0
 
-    - name: Update WebLogic password
+    - name: Change WebLogic admin password
       expect:
         command: >
           perl $FND_TOP/patch/115/bin/txkUpdateEBSDomain.pl
           -action=updateAdminPassword
         responses:
-          '.*Enter "Yes" to proceed.*': 'Yes'
-          '.*Applications Context File.*': "{{ rotation_item.user_details.context_file }}"
-          '.*Enter the WLS Admin Password:.*': "{{ previous_password }}"
-          '.*Enter the new WLS Admin Password:.*': "{{ target_password }}"
-          '.*Enter the APPS user password:.*': "{{ rotation_item.dependent_passwords.apps_password }}"
-        timeout: 1800
-      environment:
-        CONTEXT_FILE: "{{ rotation_item.user_details.context_file }}"
-      delegate_to: "{{ target_host }}"
-      register: weblogic_password_change
-      failed_when: weblogic_password_change.rc != 0
+          '.*Enter.*APPS password.*':
+            "{{ rotation_item.dependent_passwords.apps_password }}"
 
+          '.*Enter.*WebLogic password.*':
+            "{{ previous_password }}"
+
+          '.*Enter.*new.*WebLogic password.*':
+            "{{ target_password }}"
+
+          '.*Do you want to continue.*':
+            "Y"
+
+        timeout: 1800
+      args:
+        chdir: "$FND_TOP/patch/115/bin"
+      environment:
+        CONTEXT_FILE: "{{ hostvars[target_host].CONTEXT_FILE }}"
+      delegate_to: "{{ target_host }}"
+      register: weblogic_password_change_result
+      failed_when: weblogic_password_change_result.rc != 0
+    
+    
     - name: Mark apply success
       set_fact:
         apply_success: true
@@ -54,11 +93,13 @@
     - name: Mark apply failure
       set_fact:
         apply_success: false
+
         apply_errors: >-
           {{
-            apply_errors | default([])
-            + [ansible_failed_result.msg | default('WebLogic apply failed')]
+            apply_errors + [{
+              'msg': ansible_failed_result.msg | default('WebLogic apply failed')
+            }]
           }}
 
     - fail:
-        msg: "WebLogic apply failed"
+        msg: "WebLogic apply phase failed"

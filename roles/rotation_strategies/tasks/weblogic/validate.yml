@@ -1,5 +1,3 @@
-# roles/rotation_strategies/tasks/weblogic/validate.yml
-
 ---
 - block:
 
@@ -14,14 +12,14 @@
 
     - name: Validate WebLogic login using WLST
       shell: |
-        . {{ rotation_item.user_details.run_env }}
+        . {{ hostvars[target_host].EBS_ENV_FILE }}
 
         $FMW_HOME/oracle_common/common/bin/wlst.sh <<EOF > /tmp/wls_validate.log
         try:
             connect(
-                'weblogic',
+                '{{ hostvars[target_host].wls_admin_user }}',
                 '{{ target_password }}',
-                '{{ rotation_item.user_details.admin_url }}'
+                '{{ hostvars[target_host].wls_admin_url }}'
             )
             print('VALID')
             disconnect()
@@ -38,20 +36,22 @@
       changed_when: false
       failed_when: "'VALID' not in weblogic_validate_result.stdout"
 
-    - name: Mark validation success
+    - name: Mark validate success
       set_fact:
         validate_success: true
 
   rescue:
 
-    - name: Mark validation failure
+    - name: Mark validate failure
       set_fact:
         validate_success: false
+
         validate_errors: >-
           {{
-            validate_errors | default([])
-            + [ansible_failed_result.msg | default('WebLogic validation failed')]
+            validate_errors + [{
+              'msg': ansible_failed_result.msg | default('WebLogic validation failed')
+            }]
           }}
 
     - fail:
-        msg: "WebLogic validation failed"
+        msg: "WebLogic validation phase failed"
