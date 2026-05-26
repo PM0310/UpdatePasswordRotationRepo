@@ -22,6 +22,8 @@
       args:
         executable: /bin/bash
       delegate_to: "{{ target_host }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
       register: admin_server_stop_result
       failed_when: admin_server_stop_result.rc != 0
    
