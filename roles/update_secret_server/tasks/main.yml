@@ -6,7 +6,11 @@
         secretserver_success: false
         error_msg_secret: ""
 
-    - name: Search Secret
+    #################################################################
+    # Search Secret
+    #################################################################
+
+    - name: Search Secret by name
       uri:
         url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchText={{ secret_name }}"
         method: GET
@@ -15,18 +19,43 @@
       register: secret_lookup
       delegate_to: localhost
 
-    - name: Fail if secret not found
+    - name: Verify Secret found
       fail:
         msg: "Secret {{ secret_name }} not found."
-      when: secret_lookup.json.records | length == 0
+      when: secret_lookup.json['records'] | length == 0
 
-    - name: Store Secret details
+    - name: Save Secret summary
       set_fact:
-        secret_details: "{{ secret_lookup.json.records[0] }}"
+        secret_summary: "{{ secret_lookup.json['records'][0] }}"
+
+    #################################################################
+    # Get complete secret
+    #################################################################
+
+    - name: Get complete Secret
+      uri:
+        url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_summary.id }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ tkn }}"
+      register: secret_response
+      delegate_to: localhost
+
+    - name: Save complete Secret
+      set_fact:
+        secret_details: "{{ secret_response.json }}"
+
+    #################################################################
+    # Update password
+    #################################################################
+
+    - name: Build Secret URL
+      set_fact:
+        api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_details.id }}"
 
     - name: Update Secret Server
       uri:
-        url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_details.id }}"
+        url: "{{ api_url }}"
         method: PUT
         headers:
           Authorization: "Bearer {{ tkn }}"
@@ -41,14 +70,14 @@
             - fieldId: "{{ secret_details.items[0].fieldId }}"
               itemId: "{{ secret_details.items[0].itemId }}"
               itemValue: "{{ final_password }}"
-          active: true
+          active: "{{ secret_details.active }}"
           comment: "{{ secret_details.comment }}"
       register: update_response
       delegate_to: localhost
-      until: update_response.status in [200, 201, 204]
+      until: update_response.status in [200,201,204]
       retries: 3
       delay: 5
-      failed_when: update_response.status not in [200, 201, 204]
+      failed_when: update_response.status not in [200,201,204]
 
     - name: Mark Secret Server success
       set_fact:
@@ -56,7 +85,7 @@
 
   rescue:
 
-    - name: Capture Secret Server failure
+    - name: Mark Secret Server failure
       set_fact:
         secretserver_success: false
         error_msg_secret: "{{ ansible_failed_result.msg | default('Secret Server update failed') }}"
