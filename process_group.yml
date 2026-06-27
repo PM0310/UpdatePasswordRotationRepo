@@ -11,7 +11,7 @@
 
 - name: Update Secret Server
   include_role:
-    name: update_password
+    name: update_secret_server
   vars:
     secret_name: >-
       {{
