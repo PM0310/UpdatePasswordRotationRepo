@@ -7,8 +7,5 @@ pause_duration_minutes: 2
 force_kill_timeout: 9
 
 # Logging configuration - log_dir should be defined in config file
-# Falls back to /var/log/ansible/password_rotation if not defined
-log_dir_default: "/var/log/ansible/password_rotation"
-log_dir: "{{ log_dir | default(log_dir_default) }}"
-log_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+log_timestamp: "{{ current_date }}"
 stop_services_log: "{{ log_dir }}/stop_services_{{ log_timestamp }}.log"

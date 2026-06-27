@@ -20,7 +20,7 @@
   copy:
     content: |
       ============================================
-      STOP SERVICES - {{ ansible_date_time.iso8601 }}
+      STOP SERVICES - {{ current_date }}
       ============================================
       STDOUT:
       {{ stop_services_result.stdout }}
@@ -42,6 +42,11 @@
         in (stop_services_result.stdout + stop_services_result.stderr)
       }}
 
+- name: Fail if services did not stop
+  fail:
+    msg: "Services failed to stop. 'All enabled services on this node are stopped.' message not found in output."
+  when: not services_stopped
+
 - name: Wait for specified duration
   pause:
     minutes: "{{ pause_duration_minutes }}"
@@ -59,7 +64,7 @@
   copy:
     content: |
       ============================================
-      PROCESS CHECK - {{ ansible_date_time.iso8601 }}
+      PROCESS CHECK - {{ current_date }}
       ============================================
       STDOUT:
       {{ process_check.stdout }}
@@ -87,7 +92,7 @@
   copy:
     content: |
       ============================================
-      KILL PROCESSES - {{ ansible_date_time.iso8601 }}
+      KILL PROCESSES - {{ current_date }}
       ============================================
       STDOUT:
       {{ kill_result.stdout }}
@@ -114,7 +119,7 @@
   copy:
     content: |
       ============================================
-      PROCESS VERIFICATION - {{ ansible_date_time.iso8601 }}
+      PROCESS VERIFICATION - {{ current_date }}
       ============================================
       STDOUT:
       {{ verify_processes.stdout }}

@@ -7,3 +7,4 @@ olam_url: "https://10.10.125.120"
 credential_id: 24
 
 log_dir: "/stage/password_rotate/logs"
+current_date: "{{ '%Y-%m-%d' | strftime }}"
