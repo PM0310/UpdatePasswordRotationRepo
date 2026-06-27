@@ -1,25 +1,46 @@
 ---
-- name: Initialize updated_items
-  set_fact:
-    updated_items: []
+- name: Update Secret Server
+  hosts: localhost
+  gather_facts: false
 
-- name: Update successful groups
-  include_tasks: secret_update.yml
-  loop: "{{ password_rotation_items }}"
-  loop_control:
-    loop_var: rotation_item
-  when:
-    - rotation_item.password_success | default(false)
+  vars:
+    instance: "{{ instance }}"
 
-- name: Keep failed groups unchanged
-  set_fact:
-    updated_items: "{{ updated_items + [rotation_item] }}"
-  loop: "{{ password_rotation_items }}"
-  loop_control:
-    loop_var: rotation_item
-  when:
-    - not (rotation_item.password_success | default(false))
+  vars_files:
+    - config/{{ instance }}.yaml
 
-- name: Update global variable
-  set_fact:
-    password_rotation_items: "{{ updated_items }}"
+  tasks:
+
+    - name: Read password rotation state
+      slurp:
+        src: /tmp/password_rotation_state.json
+      register: rotation_state
+
+    - name: Parse password rotation state
+      set_fact:
+        password_rotation_items: "{{ rotation_state.content | b64decode | from_json }}"
+
+    - name: Initialize updated items
+      set_fact:
+        updated_items: []
+
+    - name: Update Secret Server for successful groups
+      include_tasks: process_group.yml
+      loop: "{{ password_rotation_items }}"
+      loop_control:
+        loop_var: rotation_item
+      when: rotation_item.password_success | default(false) | bool
+
+    - name: Keep failed groups unchanged
+      set_fact:
+        updated_items: "{{ updated_items + [rotation_item] }}"
+      loop: "{{ password_rotation_items }}"
+      loop_control:
+        loop_var: rotation_item
+      when: not (rotation_item.password_success | default(false) | bool)
+
+    - name: Save updated state
+      copy:
+        dest: /tmp/password_rotation_state.json
+        content: "{{ updated_items | to_nice_json }}"
+        mode: "0644"
