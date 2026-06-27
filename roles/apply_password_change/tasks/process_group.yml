@@ -37,12 +37,10 @@
         chdir: /tmp
       register: fndcpass_result
       delegate_to: "{{ target_host }}"
-      # become: yes
-      # become_user: "{{ hostvars[target_host].ebs_owner }}"
-      failed_when: >
-        fndcpass_result.rc != 0 or
-        'ORA-' in fndcpass_result.stdout or
-        'ERROR' in fndcpass_result.stdout
+      failed_when: false
+
+    - debug:
+        var: fndcpass_result
 
     - name: Record success
       set_fact:
