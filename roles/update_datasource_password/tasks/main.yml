@@ -1,0 +1,19 @@
+---
+- name: Initialize datasource update results
+  set_fact:
+    datasource_update_results: []
+
+- name: Normalize ansible_limit and extract target groups
+  set_fact:
+    target_groups: "{{ ansible_limit.split(',') | map('trim') | list }}"
+  when: ansible_limit is defined
+
+- name: Update datasource password for each group
+  include_tasks: process_group.yml
+  loop: "{{ target_groups }}"
+  loop_control:
+    loop_var: group_name
+
+- name: Show datasource update results
+  debug:
+    var: datasource_update_results
