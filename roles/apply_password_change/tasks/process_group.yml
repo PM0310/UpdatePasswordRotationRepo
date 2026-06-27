@@ -1,15 +1,16 @@
 ---
-- name: Find primary host
+- name: Find primary host in {{ group_name }}
   set_fact:
     target_host: "{{ item }}"
   loop: "{{ groups[group_name] }}"
-  when: hostvars[item].primary | default(false) | bool
+  when: hostvars[item].Primary | default(false) | bool
 
-- name: Show target host
-  debug:
-    msg: "{{ group_name }} -> {{ target_host }}"
+- name: Verify primary host found
+  fail:
+    msg: "No Primary:true host found in {{ group_name }}"
+  when: target_host is not defined
 
-- name: Resolve OLAM passwords
+- name: Resolve OLAM variable names
   set_fact:
     apps_password: >-
       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass) }}
@@ -20,30 +21,52 @@
     target_password: >-
       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
 
-    weblogic_password: >-
-      {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+- block:
 
-- name: Change APPS password using FNDCPASS
-  shell: |
-    source {{ hostvars[target_host].EBS_ENV_FILE }} run
+    - name: Change APPS password using FNDCPASS
+      shell: |
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
 
-    FNDCPASS \
-    apps/{{ apps_password }} \
-    0 Y \
-    system/{{ system_password }} \
-    SYSTEM APPLSYS \
-    {{ target_password }}
-  args:
-    executable: /bin/bash
-  register: apps_pwd_change
-  delegate_to: "{{ target_host }}"
-  become: yes
-  become_user: "{{ hostvars[target_host].ebs_owner }}"
-  failed_when: >
-    apps_pwd_change.rc != 0 or
-    'ORA-' in apps_pwd_change.stdout or
-    'ERROR' in apps_pwd_change.stdout
+        FNDCPASS \
+        apps/{{ apps_password }} \
+        0 Y \
+        system/{{ system_password }} \
+        SYSTEM APPLSYS \
+        {{ target_password }}
+      args:
+        executable: /bin/bash
+      register: fndcpass_result
+      delegate_to: "{{ target_host }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
+      failed_when: >
+        fndcpass_result.rc != 0 or
+        'ORA-' in fndcpass_result.stdout or
+        'ERROR' in fndcpass_result.stdout
 
-- name: Show output
-  debug:
-    var: apps_pwd_change.stdout_lines
+    - name: Record success
+      set_fact:
+        group_result:
+          group: "{{ group_name }}"
+          target_host: "{{ target_host }}"
+          password_success: true
+          error_message: ""
+
+  rescue:
+
+    - name: Record failure
+      set_fact:
+        group_result:
+          group: "{{ group_name }}"
+          target_host: "{{ target_host }}"
+          password_success: false
+          error_message: "{{ ansible_failed_result.msg | default('FNDCPASS failed') }}"
+
+  always:
+
+    - name: Append group result
+      set_fact:
+        password_change_results: >-
+          {{
+            password_change_results + [group_result]
+          }}
