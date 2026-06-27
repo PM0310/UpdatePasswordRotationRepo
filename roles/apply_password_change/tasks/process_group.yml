@@ -37,6 +37,7 @@
         chdir: /tmp
       register: fndcpass_result
       delegate_to: "{{ target_host }}"
+      failed_when: false
       failed_when: >
         fndcpass_result.rc != 0 or
         'ORA-' in fndcpass_result.stdout or
