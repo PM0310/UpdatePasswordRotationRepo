@@ -8,3 +8,4 @@ credential_id: 24
 
 log_dir: "/stage/password_rotate/logs"
 current_date: "{{ '%Y-%m-%d' | strftime }}"
+currentDateTime: "{{ lookup('pipe', 'date +%Y-%m-%dT%H:%M:%S') }}"
