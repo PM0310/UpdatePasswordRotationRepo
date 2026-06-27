@@ -41,6 +41,7 @@
         fndcpass_result.rc != 0 or
         'ORA-' in fndcpass_result.stdout or
         'ERROR' in fndcpass_result.stdout
+      
 
     - debug:
         var: fndcpass_result
