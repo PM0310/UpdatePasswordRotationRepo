@@ -1,0 +1,130 @@
+---
+- name: Create log directory if it doesn't exist
+  file:
+    path: "{{ log_dir }}"
+    state: directory
+    mode: '0755'
+  run_once: yes
+  delegate_to: "{{ groups['all'][0] }}"
+
+- name: Stop services
+  shell: |
+    . {{ APP_BASE }}/{{ APP_ENV }} run
+    echo {{ TGT_WEBLOGIC_PASS }} | $ADMIN_SCRIPTS_HOME/adstpall.sh apps/{{ TGT_APPS_PASS }}
+  args:
+    executable: /bin/bash
+  register: stop_services_result
+  ignore_errors: yes
+
+- name: Log stop services output
+  copy:
+    content: |
+      ============================================
+      STOP SERVICES - {{ ansible_date_time.iso8601 }}
+      ============================================
+      STDOUT:
+      {{ stop_services_result.stdout }}
+
+      STDERR:
+      {{ stop_services_result.stderr }}
+
+      Return Code: {{ stop_services_result.rc }}
+      ============================================
+
+    dest: "{{ stop_services_log }}"
+  when: stop_services_result is defined
+
+- name: Check if services stopped successfully
+  set_fact:
+    services_stopped: >-
+      {{
+        'All enabled services on this node are stopped.'
+        in (stop_services_result.stdout + stop_services_result.stderr)
+      }}
+
+- name: Wait for specified duration
+  pause:
+    minutes: "{{ pause_duration_minutes }}"
+  when: services_stopped
+
+- name: Check for remaining EBS processes
+  shell: |
+    ps -ef | egrep "{{ ebs_process_patterns }}" | grep -v grep
+  register: process_check
+  changed_when: false
+  ignore_errors: yes
+  when: services_stopped
+
+- name: Log process check output
+  copy:
+    content: |
+      ============================================
+      PROCESS CHECK - {{ ansible_date_time.iso8601 }}
+      ============================================
+      STDOUT:
+      {{ process_check.stdout }}
+
+      STDERR:
+      {{ process_check.stderr }}
+
+      Return Code: {{ process_check.rc }}
+      ============================================
+
+    dest: "{{ stop_services_log }}"
+    append: yes
+  when: process_check is defined
+
+- name: Kill remaining EBS processes
+  shell: |
+    ps -ef | egrep "{{ ebs_process_patterns }}" | grep -v grep | awk '{print $2}' | xargs -r kill -9
+  register: kill_result
+  ignore_errors: yes
+  when:
+    - services_stopped
+    - process_check.stdout | trim != ""
+
+- name: Log kill processes output
+  copy:
+    content: |
+      ============================================
+      KILL PROCESSES - {{ ansible_date_time.iso8601 }}
+      ============================================
+      STDOUT:
+      {{ kill_result.stdout }}
+
+      STDERR:
+      {{ kill_result.stderr }}
+
+      Return Code: {{ kill_result.rc }}
+      ============================================
+
+    dest: "{{ stop_services_log }}"
+    append: yes
+  when: kill_result is defined
+
+- name: Verify all EBS processes are stopped
+  shell: |
+    ps -ef | egrep "{{ ebs_process_patterns }}" | grep -v grep
+  register: verify_processes
+  changed_when: false
+  failed_when: verify_processes.stdout | trim != ""
+  when: services_stopped
+
+- name: Log verification output
+  copy:
+    content: |
+      ============================================
+      PROCESS VERIFICATION - {{ ansible_date_time.iso8601 }}
+      ============================================
+      STDOUT:
+      {{ verify_processes.stdout }}
+
+      STDERR:
+      {{ verify_processes.stderr }}
+
+      Return Code: {{ verify_processes.rc }}
+      ============================================
+
+    dest: "{{ stop_services_log }}"
+    append: yes
+  when: verify_processes is defined
