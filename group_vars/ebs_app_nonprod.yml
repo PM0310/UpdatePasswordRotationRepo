@@ -1,0 +1,18 @@
+---
+olam_prefix: "EBS"
+olam_fields:
+  apps_pass: EBS_TGT_APPS_PASS
+  apps_pass_gen: EBS_TGT_APPS_PASS_GEN
+  system_pass: EBS_TGT_SYSTEM_PASS
+  weblogic_pass: EBS_TGT_WEBLOGIC_PASS
+
+app_tier_group: "ebs_app_nonprod"
+users:
+  - secret_name: "APPS_NONPROD"
+    type: "apps_vamshi"
+    user: "APPS"
+    dependent_secrets:
+      system_password: "SYSTEM_NONPROD"
+      weblogic_admin_password: "weblogic_nonprod"
+    email_recipients:
+      - "madhuravani.peddi@centroid.com"
