@@ -82,7 +82,7 @@
           items:
             - fieldId: "{{ password_item['fieldId'] }}"
               itemId: "{{ password_item['itemId'] }}"
-              itemValue: "{{ final_password }}"
+              itemValue: "{{ final_password1 }}"
           active: "{{ secret_details['active'] }}"
           comment: ""
       register: update_response
