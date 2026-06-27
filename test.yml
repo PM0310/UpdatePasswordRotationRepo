@@ -1,6 +1,6 @@
 ---
 - name: Print OLAM Creds
-  hosts: all
+  hosts: localhost
   gather_facts: no
   run_once: true
 
