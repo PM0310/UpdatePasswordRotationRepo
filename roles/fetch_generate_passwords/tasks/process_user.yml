@@ -29,7 +29,12 @@
 
 - name: Generate a new random password
   set_fact:
-    new_password: "{{ lookup('password', '/dev/null length=16 chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_') }}"
+    new_password: >-
+      {{
+        (lookup('password', '/dev/null length=1 chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'))
+        +
+        (lookup('password', '/dev/null length=15 chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'))
+      }}
 
 - name: Fetch dependent secrets if defined
   block:
