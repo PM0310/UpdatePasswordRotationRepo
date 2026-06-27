@@ -31,7 +31,7 @@
       include_role:
         name: admin_server_start
       vars:
-        apps_password: "{{ apps_password }}"
+        apps_password: "{{ target_password }}"
         weblogic_password: "{{ weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
@@ -44,7 +44,7 @@
       include_role:
         name: admin_server_start
       vars:
-        apps_password: "{{ apps_password }}"
+        apps_password: "{{ target_password }}"
         weblogic_password: "{{ weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"
@@ -81,7 +81,7 @@
       include_role:
         name: admin_server_stop
       vars:
-        apps_password: "{{ apps_password }}"
+        apps_password: "{{ target_password }}"
         weblogic_password: "{{ weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
@@ -94,7 +94,7 @@
       include_role:
         name: admin_server_stop
       vars:
-        apps_password: "{{ apps_password }}"
+        apps_password: "{{ target_password }}"
         weblogic_password: "{{ weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"
