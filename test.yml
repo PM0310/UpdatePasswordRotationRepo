@@ -1,17 +1,20 @@
 ---
-- name: Print OLAM Creds
+- name: Print OLAM Credentials
   hosts: localhost
-  gather_facts: no
-  run_once: true
+  gather_facts: false
+
+  vars:
+    instance: "{{ instance }}"
 
   vars_files:
     - config/{{ instance }}.yaml
 
   tasks:
-    - name: OLAM Credentials
+    - name: Print credential variables
       debug:
-    	msg:
-          - "TGT_APPS_PASS={{ TGT_APPS_PASS | default('') }}"
-          - "TGT_SYSTEM_PASS={{ TGT_SYSTEM_PASS | default('') }}"
-          - "TGT_WEBLOGIC_PASS={{ TGT_WEBLOGIC_PASS | default('') }}"
-          - "TGT_APPS_PASS_GEN={{ TGT_APPS_PASS_GEN | default('') }}"
+        msg:
+          - "TGT_APPS_PASS={{ TGT_APPS_PASS | default('Not Set') }}"
+          - "TGT_SYSTEM_PASS={{ TGT_SYSTEM_PASS | default('Not Set') }}"
+          - "TGT_WEBLOGIC_PASS={{ TGT_WEBLOGIC_PASS | default('Not Set') }}"
+          - "TGT_APPS_PASS_GEN={{ TGT_APPS_PASS_GEN | default('Not Set') }}"
+          - "OLAM_PASS={{ OLAM_PASS | default('Not Set') }}"
