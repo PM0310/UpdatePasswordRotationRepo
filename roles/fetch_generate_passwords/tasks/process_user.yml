@@ -16,16 +16,16 @@
       site_id: "{{ main_secret.full_json.siteId | default('') }}"
       folder_id: "{{ main_secret.full_json.folderId | default('') }}"
       field_id: >-
-        {{ (main_secret.full_json.get('items', []) 
-             | selectattr('slug', 'equalto', 'password') 
+        {{ (main_secret.full_json.get('items', [])
+             | selectattr('slug', 'equalto', 'password')
              | first).fieldId | default('') }}
       item_id: >-
-        {{ (main_secret.full_json.get('items', []) 
-             | selectattr('slug', 'equalto', 'password') 
+        {{ (main_secret.full_json.get('items', [])
+             | selectattr('slug', 'equalto', 'password')
              | first).itemId | default('') }}
       secret_name: "{{ main_secret.full_json.name | default('') }}"
       secret_id: "{{ main_secret.id }}"
-      comment: "Updating password for secret: {{ secret_name }}"     
+      comment: "Updating password for secret: {{ secret_name }}"
 
 - name: Generate a new random password
   set_fact:
@@ -46,17 +46,18 @@
   set_fact:
     password_rotation_items: >-
       {{ password_rotation_items + [ {
-          'group':               group_name,
-          'retrieved_password':  old_password,
-          'generated_password':  new_password,
-          'password_success':    false,
-          'secretserver_success':false,
-          'user_details':        user_entry,
-          'secret_details':      secret_details_dict,
+          'group': group_name,
+          'olam_prefix': hostvars[target_host].olam_prefix,
+          'retrieved_password': old_password,
+          'generated_password': new_password,
+          'password_success': false,
+          'secretserver_success': false,
+          'user_details': user_entry,
+          'secret_details': secret_details_dict,
           'dependent_passwords': dependent_passwords | default({}),
           'apply_success': false,
           'post_success': false,
           'rollback_success': false,
           'rotation_success': false,
-          'error_messages': [],
+          'error_messages': []
         } ] }}
