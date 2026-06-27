@@ -5,7 +5,7 @@ APP_BASE: "/u01/app/oracle/EBSTRGT"
 OLAM_USER: "admin"
 OLAM_PASS: ""  # Add OLAM admin password
 olam_url: "https://10.10.125.120"
-credential_id: 24
+credential_id: 25
 
 log_dir: "/stage/password_rotate/logs"
 current_date: "{{ '%Y-%m-%d' | strftime }}"
