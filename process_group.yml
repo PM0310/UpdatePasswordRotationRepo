@@ -11,15 +11,13 @@
 
 - name: Update Secret Server
   include_role:
-    name: update_secret_server
+    name: update_password
   vars:
-    group_name: "{{ rotation_item.group }}"
-    target_host: "{{ rotation_item.target_host }}"
     secret_name: >-
       {{
         (
           hostvars[rotation_item.target_host].users
-          | selectattr('user', 'equalto', 'APPS')
+          | selectattr('user','equalto','APPS')
           | first
         ).secret_name
       }}
