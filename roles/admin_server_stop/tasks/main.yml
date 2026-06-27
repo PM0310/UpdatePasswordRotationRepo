@@ -1,0 +1,10 @@
+---
+- name: Stop AdminServer - {{ fs }} FS
+  shell: |
+    source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }}
+    cd $ADMIN_SCRIPTS_HOME
+    (echo "{{ weblogic_password }}"; echo "{{ apps_password }}") | adadminsrvctl.sh stop {{ FORCE_PATCH }}
+  args:
+    executable: /bin/bash
+  register: adminserver_run_stop
+  delegate_to: "{{ target_host }}"
