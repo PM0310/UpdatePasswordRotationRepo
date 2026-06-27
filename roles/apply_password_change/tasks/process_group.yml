@@ -8,7 +8,7 @@
   set_fact:
     target_host: "{{ item }}"
   loop: "{{ groups[group_name] }}"
-  when: hostvars[item].Primary | default(false) | bool
+  when: hostvars[item].primary | default(false) | bool
 
 - name: Verify primary host found
   fail:
