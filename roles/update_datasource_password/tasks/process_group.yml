@@ -1,0 +1,131 @@
+---
+- name: Find primary host in {{ group_name }}
+  set_fact:
+    target_host: "{{ item }}"
+  loop: "{{ groups[group_name] }}"
+  when: hostvars[item].primary | default(false) | bool
+
+- name: Verify primary host found
+  fail:
+    msg: "No primary host found in {{ group_name }}"
+  when: target_host is not defined
+
+- name: Resolve OLAM variable names
+  set_fact:
+    apps_password: >-
+      {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass) }}
+
+    target_password: >-
+      {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
+
+    weblogic_password: >-
+      {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+
+- block:
+
+    #################################################################
+    # Start Admin Server - Run FS
+    #################################################################
+
+    - name: Start AdminServer - Run FS
+      include_role:
+        name: admin_server_start
+      vars:
+        apps_password: "{{ apps_password }}"
+        weblogic_password: "{{ weblogic_password }}"
+        FORCE_PATCH: ""
+        fs: "run"
+
+    #################################################################
+    # Start Admin Server - Patch FS
+    #################################################################
+
+    - name: Start AdminServer - Patch FS
+      include_role:
+        name: admin_server_start
+      vars:
+        apps_password: "{{ apps_password }}"
+        weblogic_password: "{{ weblogic_password }}"
+        FORCE_PATCH: "forcepatchfs"
+        fs: "patch"
+
+    #################################################################
+    # Update Datasource Password
+    #################################################################
+
+    - name: Update APPS password in WLS Data Source
+      expect:
+        timeout: 600
+        chdir: /tmp
+        command: |
+          /bin/bash -c "
+            source {{ hostvars[target_host].EBS_ENV_FILE }} run
+            perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
+          "
+        responses:
+          "Enter Your Choice :": "updateDSPassword"
+          "Enter the full path of Applications Context File.*:": ""
+          "Enter weblogic admin server password: "{{ weblogic_password }}"
+          "Enter the APPS user password:": "{{ target_password }}"
+      register: ds_update
+      delegate_to: "{{ target_host }}"
+      failed_when: >
+        ds_update.rc != 0 or
+        'ERROR' in ds_update.stdout
+
+    #################################################################
+    # Stop Admin Server - Run FS
+    #################################################################
+
+    - name: Stop AdminServer - Run FS
+      include_role:
+        name: admin_server_stop
+      vars:
+        apps_password: "{{ apps_password }}"
+        weblogic_password: "{{ weblogic_password }}"
+        FORCE_PATCH: ""
+        fs: "run"
+
+    #################################################################
+    # Stop Admin Server - Patch FS
+    #################################################################
+
+    - name: Stop AdminServer - Patch FS
+      include_role:
+        name: admin_server_stop
+      vars:
+        apps_password: "{{ apps_password }}"
+        weblogic_password: "{{ weblogic_password }}"
+        FORCE_PATCH: "forcepatchfs"
+        fs: "patch"
+
+    #################################################################
+    # Record Success
+    #################################################################
+
+    - name: Record success
+      set_fact:
+        group_result:
+          group: "{{ group_name }}"
+          target_host: "{{ target_host }}"
+          datasource_success: true
+          error_message: ""
+
+  rescue:
+
+    - name: Record failure
+      set_fact:
+        group_result:
+          group: "{{ group_name }}"
+          target_host: "{{ target_host }}"
+          datasource_success: false
+          error_message: "{{ ansible_failed_result.msg | default('Datasource update failed') }}"
+
+  always:
+
+    - name: Append group result
+      set_fact:
+        datasource_update_results: >-
+          {{
+            datasource_update_results + [group_result]
+          }}
