@@ -44,7 +44,6 @@
         name: admin_server_start
       vars:
         apps_password: "{{ target_password }}"
-        # weblogic_password: "{{ weblogic_password }}"
         weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
@@ -58,7 +57,6 @@
         name: admin_server_start
       vars:
         apps_password: "{{ target_password }}"
-        # weblogic_password: "{{ weblogic_password }}"
         weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"
@@ -79,8 +77,7 @@
         responses:
           "Enter Your Choice :": "updateDSPassword"
           "Enter the full path of Applications Context File.*:": ""
-          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"  
-          #"Enter weblogic admin server password:": "{{ weblogic_password }}"
+          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"
           "Enter the APPS user password:": "{{ target_password }}"
       register: ds_update
       delegate_to: "{{ target_host }}"
@@ -97,7 +94,6 @@
         name: admin_server_stop
       vars:
         apps_password: "{{ target_password }}"
-        # weblogic_password: "{{ weblogic_password }}"
         weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
@@ -111,7 +107,6 @@
         name: admin_server_stop
       vars:
         apps_password: "{{ target_password }}"
-        # weblogic_password: "{{ weblogic_password }}"
         weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"

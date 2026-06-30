@@ -9,3 +9,8 @@
     executable: /bin/bash
   register: adminserver_run_start
   delegate_to: "{{ target_host }}"
+  failed_when: >-
+    adminserver_run_start.rc != 0 and
+    ('already running' not in (adminserver_run_start.stdout | lower))
+  changed_when: >-
+    'already running' not in (adminserver_run_start.stdout | lower)
