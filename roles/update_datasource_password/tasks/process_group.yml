@@ -76,11 +76,11 @@
             source {{ hostvars[target_host].EBS_ENV_FILE }} run
             perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
           "
-          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"
+         "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"
         responses:
           "Enter Your Choice :": "updateDSPassword"
           "Enter the full path of Applications Context File.*:": ""
-          "Enter weblogic admin server password:": "{{ weblogic_password }}"
+          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"     #"Enter weblogic admin server password:": "{{ weblogic_password }}"
           "Enter the APPS user password:": "{{ target_password }}"
       register: ds_update
       delegate_to: "{{ target_host }}"
