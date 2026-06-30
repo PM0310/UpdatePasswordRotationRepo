@@ -18,8 +18,10 @@
     target_password: >-
       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
 
-    weblogic_password: >-
-      {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+    # weblogic_password: >-
+      # {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+   resolved_weblogic_password: >-
+  {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
 
 - block:
 
@@ -32,7 +34,8 @@
         name: admin_server_start
       vars:
         apps_password: "{{ target_password }}"
-        weblogic_password: "{{ weblogic_password }}"
+        # weblogic_password: "{{ weblogic_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
 
@@ -45,7 +48,8 @@
         name: admin_server_start
       vars:
         apps_password: "{{ target_password }}"
-        weblogic_password: "{{ weblogic_password }}"
+        # weblogic_password: "{{ weblogic_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"
 
@@ -62,6 +66,7 @@
             source {{ hostvars[target_host].EBS_ENV_FILE }} run
             perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
           "
+          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"
         responses:
           "Enter Your Choice :": "updateDSPassword"
           "Enter the full path of Applications Context File.*:": ""
@@ -82,7 +87,8 @@
         name: admin_server_stop
       vars:
         apps_password: "{{ target_password }}"
-        weblogic_password: "{{ weblogic_password }}"
+        # weblogic_password: "{{ weblogic_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: ""
         fs: "run"
 
@@ -95,7 +101,8 @@
         name: admin_server_stop
       vars:
         apps_password: "{{ target_password }}"
-        weblogic_password: "{{ weblogic_password }}"
+        # weblogic_password: "{{ weblogic_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
         FORCE_PATCH: "forcepatchfs"
         fs: "patch"
 
