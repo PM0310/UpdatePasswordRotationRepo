@@ -1,0 +1,178 @@
+---
+# auto_configure.yml
+# Fetches server details from OLAM inventory and auto-configures the host
+# for password rotation workflows.
+#
+# Required extra vars (pass via AWX survey or -e flag):
+#   - instance       : config file key, e.g. "EBSTRGT"
+#   - inventory_name : name of the OLAM inventory, e.g. "EBS_NONPROD"
+#   - target_server  : hostname or IP of the server to configure, e.g. "cenartrgtdb01"
+
+- name: Auto Configure Server from OLAM Inventory
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - config/{{ instance }}.yaml
+
+  tasks:
+
+    # ------------------------------------------------------------------ #
+    # Step 1 – Discover the inventory in OLAM                             #
+    # ------------------------------------------------------------------ #
+    - name: Fetch inventory list from OLAM
+      uri:
+        url: "{{ olam_url }}/api/v2/inventories/?name={{ inventory_name | urlencode }}"
+        method: GET
+        user: "{{ OLAM_USER }}"
+        password: "{{ OLAM_PASS }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: olam_inventories
+      delegate_to: localhost
+
+    - name: Fail if inventory not found
+      fail:
+        msg: "Inventory '{{ inventory_name }}' was not found in OLAM at {{ olam_url }}"
+      when: olam_inventories.json.count == 0
+
+    - name: Set target inventory fact
+      set_fact:
+        target_inventory: "{{ olam_inventories.json.results[0] }}"
+
+    - name: Debug – target inventory
+      debug:
+        msg: "Found inventory: '{{ target_inventory.name }}' (id={{ target_inventory.id }})"
+
+    # ------------------------------------------------------------------ #
+    # Step 2 – Locate the target server host inside that inventory        #
+    # ------------------------------------------------------------------ #
+    - name: Fetch hosts from target inventory
+      uri:
+        url: "{{ olam_url }}/api/v2/inventories/{{ target_inventory.id }}/hosts/?name={{ target_server | urlencode }}"
+        method: GET
+        user: "{{ OLAM_USER }}"
+        password: "{{ OLAM_PASS }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: olam_hosts
+      delegate_to: localhost
+
+    - name: Fail if host not found in inventory
+      fail:
+        msg: "Host '{{ target_server }}' was not found in inventory '{{ inventory_name }}'"
+      when: olam_hosts.json.count == 0
+
+    - name: Set target host info fact
+      set_fact:
+        target_host_info: "{{ olam_hosts.json.results[0] }}"
+
+    - name: Debug – target host
+      debug:
+        msg: "Found host: '{{ target_host_info.name }}' (id={{ target_host_info.id }}, enabled={{ target_host_info.enabled }})"
+
+    # ------------------------------------------------------------------ #
+    # Step 3 – Pull host variables from OLAM                              #
+    # ------------------------------------------------------------------ #
+    - name: Fetch host variables from OLAM
+      uri:
+        url: "{{ olam_url }}/api/v2/hosts/{{ target_host_info.id }}/variable_data/"
+        method: GET
+        user: "{{ OLAM_USER }}"
+        password: "{{ OLAM_PASS }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: olam_host_vars_raw
+      delegate_to: localhost
+
+    - name: Set host variables fact
+      set_fact:
+        host_vars_data: "{{ olam_host_vars_raw.json }}"
+
+    - name: Debug – host variables from OLAM inventory
+      debug:
+        msg:
+          - "Hostname  : {{ target_host_info.name }}"
+          - "Host ID   : {{ target_host_info.id }}"
+          - "Enabled   : {{ target_host_info.enabled }}"
+          - "Variables : {{ host_vars_data }}"
+
+    # ------------------------------------------------------------------ #
+    # Step 4 – Pull group variables for the host's groups                 #
+    # ------------------------------------------------------------------ #
+    - name: Fetch groups for the host
+      uri:
+        url: "{{ olam_url }}/api/v2/hosts/{{ target_host_info.id }}/groups/"
+        method: GET
+        user: "{{ OLAM_USER }}"
+        password: "{{ OLAM_PASS }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: olam_host_groups
+      delegate_to: localhost
+
+    - name: Set host groups fact
+      set_fact:
+        host_groups: "{{ olam_host_groups.json.results | map(attribute='name') | list }}"
+
+    - name: Debug – groups the host belongs to
+      debug:
+        msg: "Host '{{ target_server }}' is a member of groups: {{ host_groups }}"
+
+    # ------------------------------------------------------------------ #
+    # Step 5 – Validate required fields are present                       #
+    # ------------------------------------------------------------------ #
+    - name: Validate required host variable keys exist
+      fail:
+        msg: >-
+          Missing required variable '{{ item }}' in OLAM host variables for
+          host '{{ target_server }}'. Please add it in OLAM before continuing.
+      loop:
+        - ansible_host
+        - ansible_user
+      when: item not in host_vars_data
+
+    # ------------------------------------------------------------------ #
+    # Step 6 – Build and display the consolidated server configuration    #
+    # ------------------------------------------------------------------ #
+    - name: Build server configuration fact
+      set_fact:
+        server_autoconfig:
+          hostname: "{{ target_host_info.name }}"
+          host_id: "{{ target_host_info.id }}"
+          inventory_id: "{{ target_inventory.id }}"
+          inventory_name: "{{ target_inventory.name }}"
+          groups: "{{ host_groups }}"
+          enabled: "{{ target_host_info.enabled }}"
+          variables: "{{ host_vars_data }}"
+          ansible_host: "{{ host_vars_data.ansible_host | default(target_host_info.name) }}"
+          ansible_user: "{{ host_vars_data.ansible_user | default('') }}"
+
+    - name: Display final server auto-configuration
+      debug:
+        var: server_autoconfig
+
+    # ------------------------------------------------------------------ #
+    # Step 7 – Persist configuration for downstream playbooks             #
+    # ------------------------------------------------------------------ #
+    - name: Save auto-configuration to state file
+      copy:
+        dest: "/tmp/autoconfig_{{ target_server }}_{{ instance }}.json"
+        content: "{{ server_autoconfig | to_nice_json }}"
+        mode: "0644"
+      delegate_to: localhost
+
+    - name: Auto-configuration complete
+      debug:
+        msg: >-
+          Server '{{ target_server }}' auto-configuration from OLAM inventory
+          '{{ inventory_name }}' completed successfully.
+          State saved to /tmp/autoconfig_{{ target_server }}_{{ instance }}.json
