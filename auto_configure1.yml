@@ -1,0 +1,72 @@
+---
+# ------------------------------------------------------------------ #
+# Task 1 – Run Oracle EBS AutoConfig (adautocfg.sh)                  #
+# Regenerates all EBS configuration files from the context XML for   #
+# the given filesystem tier (run / patch / etc.).                    #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Run adautocfg.sh for {{ fs }} FS
+  expect:
+    timeout: 3600
+    chdir: /tmp
+    command: >
+      /bin/bash -c "
+        source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }} &&
+        $ADMIN_SCRIPTS_HOME/adautocfg.sh
+      "
+    responses:
+      "Enter the APPS user password:": "{{ apps_password }}"
+  args:
+    executable: /bin/bash
+  register: autoconfig_result
+  delegate_to: "{{ target_host }}"
+  failed_when: autoconfig_result.rc != 0
+  changed_when: true
+  no_log: true
+
+# ------------------------------------------------------------------ #
+# Task 2 – Assert AutoConfig output contains success marker          #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Assert adautocfg.sh completed successfully
+  assert:
+    that:
+      - "'AutoConfig completed successfully' in (autoconfig_result.stdout | default(''))"
+    fail_msg: >-
+      AutoConfig (adautocfg.sh) did NOT report success on {{ target_host }}
+      for FS={{ fs }}. Check adautocfg.log for details.
+    success_msg: "AutoConfig completed successfully on {{ target_host }} for FS={{ fs }}."
+
+# ------------------------------------------------------------------ #
+# Task 3 – Debug: show last 30 lines of AutoConfig output            #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Show adautocfg.sh output (last 30 lines)
+  debug:
+    msg: "{{ (autoconfig_result.stdout_lines | default([]))[-30:] }}"
+
+# ------------------------------------------------------------------ #
+# Task 4 – Validate new APPS password via sqlplus login              #
+# Confirms that the regenerated config is consistent with the DB.    #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Validate APPS DB login with sqlplus
+  shell: |
+    source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }}
+    sqlplus -s apps/{{ apps_password }}@$TWO_TASK <<'EOF'
+    set heading off feedback off verify off
+    select 'AUTOCONFIG_VALID' from dual;
+    exit;
+    EOF
+  args:
+    executable: /bin/bash
+  register: sqlplus_validation
+  delegate_to: "{{ target_host }}"
+  changed_when: false
+  failed_when: "'AUTOCONFIG_VALID' not in (sqlplus_validation.stdout | default(''))"
+  no_log: true
+
+# ------------------------------------------------------------------ #
+# Task 5 – Confirm full validation passed                            #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Validation passed for {{ fs }} FS on {{ target_host }}
+  debug:
+    msg: >-
+      Oracle EBS AutoConfig completed and validated on {{ target_host }}
+      (FS={{ fs }}). adautocfg.sh succeeded and APPS DB login confirmed.
