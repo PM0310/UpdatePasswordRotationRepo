@@ -86,6 +86,26 @@
         'ERROR' in ds_update.stdout
 
     #################################################################
+    # Validate APPS DB login using the newly updated password
+    #################################################################
+
+    - name: Validate APPS DB login with sqlplus
+      shell: |
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
+        sqlplus -s apps/{{ target_password }}@$TWO_TASK <<'EOF'
+        set heading off feedback off verify off
+        select 'DATASOURCE_VALID' from dual;
+        exit;
+        EOF
+      args:
+        executable: /bin/bash
+      register: sqlplus_validation
+      delegate_to: "{{ target_host }}"
+      changed_when: false
+      failed_when: "'DATASOURCE_VALID' not in (sqlplus_validation.stdout | default(''))"
+      no_log: true
+
+    #################################################################
     # Stop Admin Server - Run FS
     #################################################################
 
