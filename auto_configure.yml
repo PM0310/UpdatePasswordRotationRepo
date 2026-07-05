@@ -1,320 +1,89 @@
 ---
-# auto_configure.yml
-# STANDALONE: Discovers the application server from OLAM inventory and runs
-# the complete Oracle EBS AutoConfig sequence entirely within this file.
-# No dependency on any other role or playbook.
-#
-# Required extra vars (AWX survey or -e flag):
-#   - instance              : config key, e.g. "EBSTRGT"
-#   - inventory_name        : OLAM inventory name, e.g. "EBS_NONPROD"
-#   - target_server         : app server hostname in OLAM, e.g. "cenartrgtap01"
-#   - apps_password         : APPS user password          (use masked survey field)
-#   - weblogic_admin_password: WebLogic AdminServer password (use masked survey field)
-#   - system_password       : SYSTEM DB user password     (use masked survey field)
-#
-# Optional extra vars:
-#   - restart_services      : true/false – restart EBS services after AutoConfig (default: false)
-#
-# Required OLAM host variables (set on the host in OLAM inventory):
-#   - ansible_host          : IP or FQDN of the app server
-#   - ansible_user          : OS SSH user (e.g. oracle)
-#   - EBS_ENV_FILE          : full path to EBSapps.env (e.g. /u01/app/oracle/EBSTRGT/EBSapps.env)
-#   - ebs_owner             : EBS OS owner (e.g. appl1229)
-#   - DB_SID                : Oracle DB SID (e.g. EBSTRGT)  – required only if restart_services=true
+# ------------------------------------------------------------------ #
+# Task 1 – Run Oracle EBS AutoConfig (adautocfg.sh)                  #
+# Regenerates all EBS configuration files from the context XML for   #
+# the given filesystem tier (run / patch / etc.).                    #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Resolve APPS password for AutoConfig
+  set_fact:
+    autoconfig_apps_password: >-
+      {{
+        apps_password
+        if (apps_password is defined and (apps_password | string | length > 0))
+        else vars.get(hostvars[target_host].olam_fields.apps_pass_gen | default(''), '')
+      }}
+  no_log: true
 
-# ======================================================================= #
-# PLAY 1 – Discover application server from OLAM and build dynamic host   #
-# ======================================================================= #
-- name: "Play 1 – Discover app server from OLAM inventory"
-  hosts: localhost
-  gather_facts: false
+- name: AutoConfigure - Fail when APPS password is not available
+  fail:
+    msg: >-
+      Unable to resolve APPS password for AutoConfig on {{ target_host }}.
+      Provide apps_password or ensure OLAM field {{ hostvars[target_host].olam_fields.apps_pass_gen | default('apps_pass_gen') }} is available.
+  when: autoconfig_apps_password | default('') | length == 0
 
-  vars_files:
-    - config/{{ instance }}.yaml
+- name: AutoConfigure - Run adautocfg.sh for {{ fs }} FS
+  expect:
+    timeout: 3600
+    chdir: /tmp
+    command: >
+      /bin/bash -c "
+        source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }} &&
+        $ADMIN_SCRIPTS_HOME/adautocfg.sh
+      "
+    responses:
+      "Enter the APPS user password:": "{{ autoconfig_apps_password }}"
+  args:
+    executable: /bin/bash
+  register: autoconfig_result
+  delegate_to: "{{ target_host }}"
+  failed_when: autoconfig_result.rc != 0
+  changed_when: true
+  no_log: true
 
-  tasks:
+# ------------------------------------------------------------------ #
+# Task 2 – Assert AutoConfig output contains success marker          #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Assert adautocfg.sh completed successfully
+  assert:
+    that:
+      - "'AutoConfig completed successfully' in (autoconfig_result.stdout | default(''))"
+    fail_msg: >-
+      AutoConfig (adautocfg.sh) did NOT report success on {{ target_host }}
+      for FS={{ fs }}. Check adautocfg.log for details.
+    success_msg: "AutoConfig completed successfully on {{ target_host }} for FS={{ fs }}."
 
-    # ------------------------------------------------------------------ #
-    # Step 1 – Discover the inventory in OLAM                             #
-    # ------------------------------------------------------------------ #
-    - name: Fetch inventory from OLAM by name
-      uri:
-        url: "{{ olam_url }}/api/v2/inventories/?name={{ inventory_name | urlencode }}"
-        method: GET
-        user: "{{ OLAM_USER }}"
-        password: "{{ OLAM_PASS }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-        status_code: 200
-      register: olam_inventories
-      delegate_to: localhost
+# ------------------------------------------------------------------ #
+# Task 3 – Debug: show last 30 lines of AutoConfig output            #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Show adautocfg.sh output (last 30 lines)
+  debug:
+    msg: "{{ (autoconfig_result.stdout_lines | default([]))[-30:] }}"
 
-    - name: Fail if inventory not found
-      fail:
-        msg: "Inventory '{{ inventory_name }}' was not found in OLAM at {{ olam_url }}"
-      when: olam_inventories.json.count == 0
+# ------------------------------------------------------------------ #
+# Task 4 – Validate new APPS password via sqlplus login              #
+# Confirms that the regenerated config is consistent with the DB.    #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Validate APPS DB login with sqlplus
+  shell: |
+    source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }}
+    sqlplus -s apps/{{ autoconfig_apps_password }}@$TWO_TASK <<'EOF'
+    set heading off feedback off verify off
+    select 'AUTOCONFIG_VALID' from dual;
+    exit;
+    EOF
+  args:
+    executable: /bin/bash
+  register: sqlplus_validation
+  delegate_to: "{{ target_host }}"
+  changed_when: false
+  failed_when: "'AUTOCONFIG_VALID' not in (sqlplus_validation.stdout | default(''))"
+  no_log: true
 
-    - name: Set target inventory fact
-      set_fact:
-        target_inventory: "{{ olam_inventories.json.results[0] }}"
-
-    - name: Debug – target inventory
-      debug:
-        msg: "Found inventory: '{{ target_inventory.name }}' (id={{ target_inventory.id }})"
-
-    # ------------------------------------------------------------------ #
-    # Step 2 – Locate the application server host in that inventory       #
-    # ------------------------------------------------------------------ #
-    - name: Fetch host from OLAM inventory by name
-      uri:
-        url: "{{ olam_url }}/api/v2/inventories/{{ target_inventory.id }}/hosts/?name={{ target_server | urlencode }}"
-        method: GET
-        user: "{{ OLAM_USER }}"
-        password: "{{ OLAM_PASS }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-        status_code: 200
-      register: olam_hosts
-      delegate_to: localhost
-
-    - name: Fail if host not found in inventory
-      fail:
-        msg: "Host '{{ target_server }}' was not found in inventory '{{ inventory_name }}'"
-      when: olam_hosts.json.count == 0
-
-    - name: Set target host info fact
-      set_fact:
-        target_host_info: "{{ olam_hosts.json.results[0] }}"
-
-    - name: Debug – target host
-      debug:
-        msg: "Found host: '{{ target_host_info.name }}' (id={{ target_host_info.id }}, enabled={{ target_host_info.enabled }})"
-
-    # ------------------------------------------------------------------ #
-    # Step 3 – Pull host variables from OLAM                              #
-    # ------------------------------------------------------------------ #
-    - name: Fetch host variables from OLAM
-      uri:
-        url: "{{ olam_url }}/api/v2/hosts/{{ target_host_info.id }}/variable_data/"
-        method: GET
-        user: "{{ OLAM_USER }}"
-        password: "{{ OLAM_PASS }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-        status_code: 200
-      register: olam_host_vars_raw
-      delegate_to: localhost
-
-    - name: Set host variables fact
-      set_fact:
-        host_vars_data: "{{ olam_host_vars_raw.json }}"
-
-    - name: Debug – host variables retrieved from OLAM
-      debug:
-        msg:
-          - "Hostname    : {{ target_host_info.name }}"
-          - "Host ID     : {{ target_host_info.id }}"
-          - "Enabled     : {{ target_host_info.enabled }}"
-          - "ansible_host: {{ host_vars_data.ansible_host | default('NOT SET') }}"
-          - "ansible_user: {{ host_vars_data.ansible_user | default('NOT SET') }}"
-          - "EBS_ENV_FILE: {{ host_vars_data.EBS_ENV_FILE | default('NOT SET') }}"
-          - "ebs_owner   : {{ host_vars_data.ebs_owner    | default('NOT SET') }}"
-          - "DB_SID      : {{ host_vars_data.DB_SID       | default('NOT SET') }}"
-
-    # ------------------------------------------------------------------ #
-    # Step 4 – Pull group membership from OLAM                            #
-    # ------------------------------------------------------------------ #
-    - name: Fetch groups for the host
-      uri:
-        url: "{{ olam_url }}/api/v2/hosts/{{ target_host_info.id }}/groups/"
-        method: GET
-        user: "{{ OLAM_USER }}"
-        password: "{{ OLAM_PASS }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-        status_code: 200
-      register: olam_host_groups
-      delegate_to: localhost
-
-    - name: Set host groups fact
-      set_fact:
-        host_groups: "{{ olam_host_groups.json.results | map(attribute='name') | list }}"
-
-    - name: Debug – groups the host belongs to
-      debug:
-        msg: "Host '{{ target_server }}' is a member of groups: {{ host_groups }}"
-
-    # ------------------------------------------------------------------ #
-    # Step 5 – Validate all required OLAM host variables are present      #
-    # ------------------------------------------------------------------ #
-    - name: Validate required host variables exist in OLAM
-      fail:
-        msg: >-
-          Missing required variable '{{ item }}' in OLAM host variables for
-          host '{{ target_server }}'. Add it in OLAM → Inventories →
-          {{ inventory_name }} → Hosts → {{ target_server }} → Variables.
-      loop:
-        - ansible_host
-        - ansible_user
-        - EBS_ENV_FILE
-        - ebs_owner
-      when: item not in host_vars_data
-
-    # ------------------------------------------------------------------ #
-    # Step 6 – Register application server in dynamic inventory           #
-    # ------------------------------------------------------------------ #
-    - name: Add application server to dynamic inventory
-      add_host:
-        name: "{{ target_host_info.name }}"
-        groups: autoconfig_targets
-        ansible_host: "{{ host_vars_data.ansible_host }}"
-        ansible_user: "{{ host_vars_data.ansible_user }}"
-        ansible_become: "{{ host_vars_data.ansible_become | default(true) }}"
-        ansible_ssh_private_key_file: "{{ host_vars_data.ansible_ssh_private_key_file | default(omit) }}"
-        # EBS-specific vars
-        _ebs_env_file: "{{ host_vars_data.EBS_ENV_FILE }}"
-        _ebs_owner: "{{ host_vars_data.ebs_owner }}"
-        _db_sid: "{{ host_vars_data.DB_SID | default('') }}"
-
-    - name: Discovery complete – proceeding to AutoConfig on {{ target_host_info.name }}
-      debug:
-        msg: >-
-          Application server '{{ target_host_info.name }}'
-          ({{ host_vars_data.ansible_host }}) discovered from OLAM.
-          Proceeding with AutoConfig.
-
-# ======================================================================= #
-# PLAY 2 – Run complete Oracle EBS AutoConfig on the application server   #
-# ======================================================================= #
-- name: "Play 2 – Run Oracle EBS AutoConfig on application server"
-  hosts: autoconfig_targets
-  gather_facts: false
-
-  tasks:
-
-    # ------------------------------------------------------------------ #
-    # Step 7 – Run adautocfg.sh (Oracle EBS AutoConfig)                  #
-    # Regenerates all EBS config files from the context XML using the     #
-    # new APPS password.                                                  #
-    # ------------------------------------------------------------------ #
-    - name: Run adautocfg.sh on application server
-      expect:
-        timeout: 3600
-        chdir: /tmp
-        command: >
-          /bin/bash -c "
-            source {{ _ebs_env_file }} run &&
-            ${ADMIN_SCRIPTS_HOME}/adautocfg.sh
-          "
-        responses:
-          "Enter the APPS user password:": "{{ apps_password }}"
-      register: autoconfig_result
-      failed_when: autoconfig_result.rc != 0
-      become: true
-      become_user: "{{ _ebs_owner }}"
-      no_log: true
-
-    - name: Debug – AutoConfig output (last 30 lines)
-      debug:
-        msg: "{{ (autoconfig_result.stdout_lines | default([]))[-30:] }}"
-
-    - name: Confirm AutoConfig completed successfully
-      debug:
-        msg: "AutoConfig completed successfully on {{ inventory_hostname }}"
-
-    # ------------------------------------------------------------------ #
-    # Step 8 – Update WebLogic DataSource connection pool with new        #
-    # APPS password via txkManageDBConnectionPool.pl                     #
-    # ------------------------------------------------------------------ #
-    - name: Update WebLogic DataSource password (txkManageDBConnectionPool.pl)
-      expect:
-        timeout: 600
-        chdir: /tmp
-        command: >
-          /bin/bash -c "
-            source {{ _ebs_env_file }} run &&
-            perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
-          "
-        responses:
-          "Enter Your Choice :": "updateDSPassword"
-          "Enter the full path of Applications Context File.*:": ""
-          "Enter weblogic admin server password:": "{{ weblogic_admin_password }}"
-          "Enter the APPS user password:": "{{ apps_password }}"
-      register: ds_update_result
-      failed_when: ds_update_result.rc != 0 or 'ERROR' in (ds_update_result.stdout | default(''))
-      become: true
-      become_user: "{{ _ebs_owner }}"
-      no_log: true
-
-    - name: Confirm DataSource password updated successfully
-      debug:
-        msg: "WebLogic DataSource password updated successfully on {{ inventory_hostname }}"
-
-    # ------------------------------------------------------------------ #
-    # Step 9 (Optional) – Bounce EBS services to apply new config        #
-    # Only runs when restart_services=true is passed as an extra var      #
-    # ------------------------------------------------------------------ #
-    - name: Stop all EBS services (adstpall.sh)
-      shell: |
-        cd /tmp
-        source {{ _ebs_env_file }} run
-        { echo "apps"; echo "{{ apps_password }}"; echo "{{ system_password }}"; } | adstpall.sh apps@{{ _db_sid }}
-      args:
-        executable: /bin/bash
-      register: stop_result
-      failed_when: stop_result.rc != 0
-      become: true
-      become_user: "{{ _ebs_owner }}"
-      no_log: true
-      when: restart_services | default(false) | bool
-
-    - name: Start all EBS services (adstrtal.sh)
-      shell: |
-        cd /tmp
-        source {{ _ebs_env_file }} run
-        { echo "apps"; echo "{{ apps_password }}"; echo "{{ system_password }}"; } | adstrtal.sh apps@{{ _db_sid }}
-      args:
-        executable: /bin/bash
-      register: start_result
-      failed_when: start_result.rc != 0
-      become: true
-      become_user: "{{ _ebs_owner }}"
-      no_log: true
-      when: restart_services | default(false) | bool
-
-    - name: Confirm services restarted successfully
-      debug:
-        msg: "EBS services restarted successfully on {{ inventory_hostname }}"
-      when: restart_services | default(false) | bool
-
-    # ------------------------------------------------------------------ #
-    # Step 10 – Validate new APPS password via sqlplus login              #
-    # ------------------------------------------------------------------ #
-    - name: Validate APPS login with new password via sqlplus
-      shell: |
-        cd /tmp
-        source {{ _ebs_env_file }} run
-        sqlplus -s apps/{{ apps_password }}@{{ _db_sid }} <<EOF
-        set heading off feedback off
-        select 'AUTOCONFIG_VALID' from dual;
-        exit;
-        EOF
-      args:
-        executable: /bin/bash
-      register: validation_result
-      changed_when: false
-      failed_when: "'AUTOCONFIG_VALID' not in validation_result.stdout"
-      become: true
-      become_user: "{{ _ebs_owner }}"
-      no_log: true
-
-    - name: AutoConfig fully completed and validated on {{ inventory_hostname }}
-      debug:
-        msg: >-
-          Oracle EBS AutoConfig completed successfully on {{ inventory_hostname }}.
-          Steps done: adautocfg.sh → WLS DataSource update → sqlplus validation.
-          Service restart: {{ restart_services | default(false) | bool }}
+# ------------------------------------------------------------------ #
+# Task 5 – Confirm full validation passed                            #
+# ------------------------------------------------------------------ #
+- name: AutoConfigure - Validation passed for {{ fs }} FS on {{ target_host }}
+  debug:
+    msg: >-
+      Oracle EBS AutoConfig completed and validated on {{ target_host }}
+      (FS={{ fs }}). adautocfg.sh succeeded and APPS DB login confirmed.
